@@ -27,7 +27,7 @@ const round = Math.round
 const abs = Math.abs
 const PI = Math.PI
 
-class TinyPause { constructor (nr_of_calls) { this.call_index = 0; this.nr_of_calls = +nr_of_calls || 10000; }; execute = f => { this.call_index++; if (this.call_index >= this.nr_of_calls) { this.call_index = 0; setTimeout(f, 0); } else f() } }
+class TinyPause { constructor(nr_of_calls) { this.call_index = 0; this.nr_of_calls = +nr_of_calls || 10000; }; execute = f => { this.call_index++; if (this.call_index >= this.nr_of_calls) { this.call_index = 0; setTimeout(f, 0); } else f() } }
 const sanityPause = new TinyPause(10000)
 
 const chance = pct => random() <= pct
@@ -71,7 +71,9 @@ const generateRandomParameter = param => {
         return randomArrayItem(options)
     } else {
         let range = param.range || { min: 0, max: 100 }
-        return type === 'integer' ? randomOfRangeInt(range.min, range.max) : randomOfRange(range.min, range.max)
+        let output = type === 'integer' ? randomOfRangeInt(range.min, range.max) : randomOfRange(range.min, range.max)
+        if (param.snap > 0) output = snapNumber(output, param.snap)
+        return output
     }
 }
 
@@ -104,6 +106,7 @@ const mutateParameter = (value, param, options, child_proportional_position) => 
 
 const generatePopulation = (generations, options, callback) => {
     let myPopulation = []
+    // If this is the first generation ...
     if (generations.length === 0) {
         // Generate new population based on initial parameter values OR random parameter values
         for (let i = 0; i < options.max_population; i++) {
@@ -294,7 +297,7 @@ const EVLOLVE_ONE_GEN = (options, callback) => {
 }
 
 module.exports = class Model {
-    constructor () {
+    constructor() {
         this.max_population = 100
         this.survivorPercent = false
         this.survivors = 4
