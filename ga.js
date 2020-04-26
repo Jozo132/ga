@@ -398,7 +398,9 @@ module.exports = class Model {
             callback(result)
         })
     }
-    evolve = (generation_count, callback) => {
+    evolve = (generation_count, intermediate_callback, final_callback) => {
+        const middleFunction = intermediate_callback
+        const lastFunction = final_callback || intermediate_callback
         const nrOfSurvivors = this.survivorPercent ? Math.ceil(this.survivors * this.max_population) : this.survivors
         const options = {
             generations: this.generations,
@@ -429,11 +431,15 @@ module.exports = class Model {
                 this.proportional_mutation_factor = result.proportional_mutation_factor
                 if (cycle < generation_count && abs(this.fitnessTargetValue - result.fitness) > options.fitnessTargetTolerance && !this.stopFitness(result.fitness)) {
                     options.proportional_mutation_factor = result.proportional_mutation_factor
-                    callback(result)
+                    result.message = `Gen: ${result.generation.toString().padStart(3, ' ')}  Pop: ${result.population}  PMF: ${result.proportional_mutation_factor.toFixed(3)} finished in ${result.time.toString().padStart(4, ' ')} ms    Best fitness: ${result.fitness >= 0 ? ' ' + result.fitness.toFixed(15) : result.fitness.toFixed(15)} => ${JSON.stringify(result.parameters).substring(0, 150)}`
+                    middleFunction(result)
                     iterate()
                 } else {
                     result.finished = true
-                    callback(result)
+                    result.message = `Gen: ${result.generation.toString().padStart(3, ' ')}  Pop: ${result.population}  PMF: ${result.proportional_mutation_factor.toFixed(3)} finished in ${result.time.toString().padStart(4, ' ')} ms    Best fitness: ${result.fitness >= 0 ? ' ' + result.fitness.toFixed(15) : result.fitness.toFixed(15)} => ${JSON.stringify(result.parameters).substring(0, 150)}`
+                    if (lastFunction !== middleFunction) middleFunction(result)
+                    result.message = `FINISHED in ${result.totalTime.toString().padStart(4, ' ')} ms    Best fitness: ${result.fitness >= 0 ? ' ' + result.fitness.toFixed(12) : result.fitness.toFixed(12)} => ${JSON.stringify(result.parameters)}`
+                    lastFunction(result)
                 }
             })
         }
