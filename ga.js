@@ -273,7 +273,12 @@ const EVLOLVE_ONE_GEN = (options, callback) => {
                             best: best
                         }
                         if (options.verbose) console.log(`Generation ${thisGeneration.index} finished. Best fitness: ${thisGeneration.best[0].__fitness__}`)
+
+                        // Only remember single best from each past generation, except for the last generation remember all survivors
+                        if (options.generations.length > 0) options.generations[options.generations.length - 1].best = [options.generations[options.generations.length - 1].best[0]]
+
                         options.generations.push(thisGeneration)
+                        if (options.generations.length > 5000) options.generations.shift()
 
                         let new_proportional_mutation_factor = abs(options.fitnessTargetValue - thisGeneration.best[0].__fitness__)
                         if (options.verbose) console.log(`Proportional mutation power changed: ${options.proportional_mutation_factor} => ${new_proportional_mutation_factor}`)
@@ -329,6 +334,7 @@ module.exports = class Model {
     setMutationChance = c => this.mutation.chance = c || 0
     initialize = init => this.initialParams = init || {}
     setFitnessFunction = f => this.calculateFitness = f || (() => 0)
+    setStopFunction = f => this.stopFitness = f || (() => false)
     letBestSurvive = s => this.bestSurvive = (s || s === undefined ? true : false)
     debug = bool => this.verbose = bool ? true : false
 
@@ -394,7 +400,7 @@ module.exports = class Model {
                 totalTime += result.time
                 result.totalTime = totalTime
                 this.proportional_mutation_factor = result.proportional_mutation_factor
-                if (cycle < generation_count && abs(this.fitnessTargetValue - result.fitness) > options.fitnessTargetTolerance) {
+                if (cycle < generation_count && abs(this.fitnessTargetValue - result.fitness) > options.fitnessTargetTolerance && !this.stopFitness(result.fitness)) {
                     options.proportional_mutation_factor = result.proportional_mutation_factor
                     callback(result)
                     iterate()
