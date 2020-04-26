@@ -313,7 +313,7 @@ const EVLOLVE_ONE_GEN = (options, callback) => {
 
 const throwTimeoutDefault = () => console.log('ERROR: Generation check timeout')
 
-module.exports = class Model {
+class Trainer {
     constructor(config) {
         this.__internal__ = {
             max_population: 100,
@@ -471,3 +471,5 @@ module.exports = class Model {
         iterate()
     }
 }
+
+module.exports = Trainer
