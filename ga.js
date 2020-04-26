@@ -311,27 +311,51 @@ const EVLOLVE_ONE_GEN = (options, callback) => {
     })
 }
 
+const throwTimeoutDefault = () => console.log('ERROR: Generation check timeout')
+
 module.exports = class Model {
-    constructor() {
-        this.max_population = 100
-        this.survivorPercent = false
-        this.survivors = 4
-        this.fitnessTargetValue = 0
-        this.fitnessTargetTolerance = 0
-        this.fitnessTimeout = 10000
-        this.bestSurvive = true
-        this.mutation = { chance: 0.5, power: 0.1 }
-        this.crossoverChance = 0.1
-        this.proportional_mutation_factor = 1.0
-        this.verbose = false
-        this.parameters = []
-        this.initialParams = {}
-        this.calculateFitness = () => 0
-        this.stopFitness = x => false
-        this.throwTimeout = () => this.throwTimeoutDefault()
-        this.throwTimeoutDefault = () => console.log('ERROR: Generation check timeout')
-        this.generations = []
+    constructor(config) {
+        this.__internal__ = {
+            max_population: 100,
+            survivorPercent: false,
+            survivors: 4,
+            fitnessTargetValue: 0,
+            fitnessTargetTolerance: 0,
+            fitnessTimeout: 10000,
+            bestSurvive: true,
+            mutation: { chance: 0.5, power: 0.1 },
+            crossoverChance: 0.1,
+            proportional_mutation_factor: 1.0,
+            verbose: false,
+            parameters: [],
+            initialParams: {},
+            calculateFitness: () => 0,
+            stopFitness: x => false,
+            throwTimeout: () => throwTimeoutDefault(),
+            generations: []
+
+        }
+        this.configure(config)
     };
+
+    configure = (config) => {
+        config = config || {}
+        if (config.parameters !== undefined) this.setParameters(config.parameters)
+        if (config.debug !== undefined) this.debug(config.debug)
+        if (config.initialValues !== undefined) this.initialize(config.initialValues)
+        if (config.maxPopulation !== undefined) this.setMaxPopulation(config.maxPopulation)
+        if (config.survivors !== undefined) this.setSurvivors(config.survivors)
+        if (config.survivorsPERCENT !== undefined) this.setSurvivorsPERCENT(config.survivorsPERCENT)
+        if (config.crossoverChance !== undefined) this.setCrossoverChance(config.crossoverChance)
+        if (config.mutationChance !== undefined) this.setMutationChance(config.mutationChance)
+        if (config.mutationPower !== undefined) this.setMutationPower(config.mutationPower)
+        if (config.fitnessTargetValue !== undefined) this.setFitnessTargetValue(config.fitnessTargetValue)
+        if (config.bestSurvive !== undefined) this.letBestSurvive(config.bestSurvive)
+        if (config.fitnessFunction !== undefined) this.setFitnessFunction(config.fitnessFunction)
+
+        if (config.fitnessTimeoutFunction !== undefined) this.setFitnessTimeout(config.fitnessTimeoutFunction, undefined)
+        if (config.fitnessTimeout !== undefined) this.setFitnessTimeout(undefined, config.fitnessTimeout)
+    }
 
     setParameters = (...params) => {
         const inputParameters = isArray(params[0]) ? params[0] : params
@@ -349,22 +373,22 @@ module.exports = class Model {
                 outputParameters.push(param)
             }
         })
-        this.parameters = outputParameters
+        this.__internal__.parameters = outputParameters
     }
-    setFitnessTargetValue = t => this.fitnessTargetValue = t || 0
-    setFitnessTargetTolerance = t => this.fitnessTargetTolerance = t || 0
-    setFitnessTimeout = (callback, to) => { this.throwTimeout = callback || this.throwTimeoutDefault; this.fitnessTimeout = to || 10000 }
-    setMaxPopulation = mp => this.max_population = mp || 100
-    setSurvivors = s => { this.survivors = s || 0; this.survivorPercent = false }
-    setSurvivorsPERCENT = s => { this.survivors = s || 0; this.survivorPercent = true }
-    setCrossoverChance = c => this.crossoverChance = c || 0
-    setMutationPower = p => this.mutation.power = p || 0
-    setMutationChance = c => this.mutation.chance = c || 0
-    initialize = init => this.initialParams = init || {}
-    setFitnessFunction = f => this.calculateFitness = f || (() => 0)
-    setStopFunction = f => this.stopFitness = f || (() => false)
-    letBestSurvive = s => this.bestSurvive = (s || s === undefined ? true : false)
-    debug = bool => this.verbose = bool ? true : false
+    setFitnessTargetValue = t => this.__internal__.fitnessTargetValue = t || 0
+    setFitnessTargetTolerance = t => this.__internal__.fitnessTargetTolerance = t || 0
+    setFitnessTimeout = (callback, to) => { this.__internal__.throwTimeout = callback || this.__internal__.throwTimeout; this.__internal__.fitnessTimeout = to || this.__internal__.fitnessTimeout }
+    setMaxPopulation = mp => this.__internal__.max_population = mp || 100
+    setSurvivors = s => { this.__internal__.survivors = s || 0; this.__internal__.survivorPercent = false }
+    setSurvivorsPERCENT = s => { this.__internal__.survivors = s || 0; this.__internal__.survivorPercent = true }
+    setCrossoverChance = c => this.__internal__.crossoverChance = c || 0
+    setMutationPower = p => this.__internal__.mutation.power = p || 0
+    setMutationChance = c => this.__internal__.mutation.chance = c || 0
+    initialize = init => this.__internal__.initialParams = init || {}
+    setFitnessFunction = f => this.__internal__.calculateFitness = f || (() => 0)
+    setStopFunction = f => this.__internal__.stopFitness = f || (() => false)
+    letBestSurvive = s => this.__internal__.bestSurvive = (s || s === undefined ? true : false)
+    debug = bool => this.__internal__.verbose = bool ? true : false
 
     // 1. Generate population based on parents or initial values or random
     // 2. Do crossover
@@ -372,29 +396,29 @@ module.exports = class Model {
     // 4. Do fitness test
     // 5. Select best
     evolveOneGeneration = callback => {
-        const nrOfSurvivors = this.survivorPercent ? Math.ceil(this.survivors * this.max_population) : this.survivors
+        const nrOfSurvivors = this.__internal__.survivorPercent ? Math.ceil(this.__internal__.survivors * this.__internal__.max_population) : this.__internal__.survivors
         const options = {
-            generations: this.generations,
-            parameters: this.parameters,
-            initialParams: this.initialParams,
-            max_population: this.max_population,
-            survivors: this.survivors,
+            generations: this.__internal__.generations,
+            parameters: this.__internal__.parameters,
+            initialParams: this.__internal__.initialParams,
+            max_population: this.__internal__.max_population,
+            survivors: this.__internal__.survivors,
             nrOfSurvivors: nrOfSurvivors,
-            survivorPercent: this.survivorPercent,
-            fitnessTargetValue: this.fitnessTargetValue,
-            fitnessTargetTolerance: this.fitnessTargetTolerance,
-            fitnessTimeout: this.fitnessTimeout,
-            throwTimeout: this.throwTimeout,
-            crossoverChance: this.crossoverChance,
-            mutation: this.mutation || { chance: 0.1, power: 0.1 },
-            proportional_mutation_factor: this.proportional_mutation_factor,
-            calculateFitness: this.calculateFitness,
-            bestSurvive: this.bestSurvive,
-            verbose: this.verbose
+            survivorPercent: this.__internal__.survivorPercent,
+            fitnessTargetValue: this.__internal__.fitnessTargetValue,
+            fitnessTargetTolerance: this.__internal__.fitnessTargetTolerance,
+            fitnessTimeout: this.__internal__.fitnessTimeout,
+            throwTimeout: this.__internal__.throwTimeout,
+            crossoverChance: this.__internal__.crossoverChance,
+            mutation: this.__internal__.mutation || { chance: 0.1, power: 0.1 },
+            proportional_mutation_factor: this.__internal__.proportional_mutation_factor,
+            calculateFitness: this.__internal__.calculateFitness,
+            bestSurvive: this.__internal__.bestSurvive,
+            verbose: this.__internal__.verbose
         }
         EVLOLVE_ONE_GEN(options, result => {
             result.totalTime = result.time
-            this.proportional_mutation_factor = result.proportional_mutation_factor
+            this.__internal__.proportional_mutation_factor = result.proportional_mutation_factor
             result.finished = true
             callback(result)
         })
@@ -402,25 +426,25 @@ module.exports = class Model {
     evolve = (generation_count, intermediate_callback, final_callback) => {
         const middleFunction = intermediate_callback
         const lastFunction = final_callback || intermediate_callback
-        const nrOfSurvivors = this.survivorPercent ? Math.ceil(this.survivors * this.max_population) : this.survivors
+        const nrOfSurvivors = this.__internal__.survivorPercent ? Math.ceil(this.__internal__.survivors * this.__internal__.max_population) : this.__internal__.survivors
         const options = {
-            generations: this.generations,
-            parameters: this.parameters,
-            initialParams: this.initialParams,
-            max_population: this.max_population,
-            survivors: this.survivors,
+            generations: this.__internal__.generations,
+            parameters: this.__internal__.parameters,
+            initialParams: this.__internal__.initialParams,
+            max_population: this.__internal__.max_population,
+            survivors: this.__internal__.survivors,
             nrOfSurvivors: nrOfSurvivors,
-            survivorPercent: this.survivorPercent,
-            fitnessTargetValue: this.fitnessTargetValue,
-            fitnessTargetTolerance: this.fitnessTargetTolerance,
-            fitnessTimeout: this.fitnessTimeout,
-            throwTimeout: this.throwTimeout,
-            crossoverChance: this.crossoverChance,
-            mutation: this.mutation || { chance: 0.1, power: 0.1 },
-            proportional_mutation_factor: this.proportional_mutation_factor,
-            calculateFitness: this.calculateFitness,
-            bestSurvive: this.bestSurvive,
-            verbose: this.verbose
+            survivorPercent: this.__internal__.survivorPercent,
+            fitnessTargetValue: this.__internal__.fitnessTargetValue,
+            fitnessTargetTolerance: this.__internal__.fitnessTargetTolerance,
+            fitnessTimeout: this.__internal__.fitnessTimeout,
+            throwTimeout: this.__internal__.throwTimeout,
+            crossoverChance: this.__internal__.crossoverChance,
+            mutation: this.__internal__.mutation || { chance: 0.1, power: 0.1 },
+            proportional_mutation_factor: this.__internal__.proportional_mutation_factor,
+            calculateFitness: this.__internal__.calculateFitness,
+            bestSurvive: this.__internal__.bestSurvive,
+            verbose: this.__internal__.verbose
         }
         let cycle = 0;
         let totalTime = 0;
@@ -429,8 +453,8 @@ module.exports = class Model {
             EVLOLVE_ONE_GEN(options, result => {
                 totalTime += result.time
                 result.totalTime = totalTime
-                this.proportional_mutation_factor = result.proportional_mutation_factor
-                if (cycle < generation_count && abs(this.fitnessTargetValue - result.fitness) > options.fitnessTargetTolerance && !this.stopFitness(result.fitness)) {
+                this.__internal__.proportional_mutation_factor = result.proportional_mutation_factor
+                if (cycle < generation_count && abs(this.__internal__.fitnessTargetValue - result.fitness) > options.fitnessTargetTolerance && !this.__internal__.stopFitness(result.fitness)) {
                     options.proportional_mutation_factor = result.proportional_mutation_factor
                     result.message = `Gen: ${result.generation.toString().padStart(3, ' ')}  Pop: ${result.population}  PMF: ${result.proportional_mutation_factor.toFixed(3)} finished in ${result.time.toString().padStart(4, ' ')} ms    Best fitness: ${result.fitness >= 0 ? ' ' + result.fitness.toFixed(15) : result.fitness.toFixed(15)} => ${JSON.stringify(result.parameters).substring(0, 150)}`
                     middleFunction(result)
