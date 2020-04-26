@@ -238,8 +238,13 @@ const fitnessTestPopulationASYNC = (population, options, callback) => {
     }
 
     if (options.verbose) console.log('Testing a population of', uniquePopulation.length)
-    uniquePopulation.forEach(child => options.calculateFitness(child, result => sanityPause.execute(() => onEachFitnessDone(child, result))))
-}
+    uniquePopulation.forEach(child => {
+        let gotResponse = false
+        const fitnessCallback = result => {
+            if (!gotResponse) {
+                gotResponse = true
+                sanityPause.execute(() => onEachFitnessDone(child, result))
+            }
 
 const populationSelection = (population, options, callback) => {
     population = population.sort((a, b) => fitnessSort(options.fitnessTargetValue, a, b))
