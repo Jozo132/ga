@@ -424,8 +424,8 @@ module.exports = class Model {
         })
     }
     evolve = (generation_count, intermediate_callback, final_callback) => {
-        const middleFunction = intermediate_callback
-        const lastFunction = final_callback || intermediate_callback
+        const middleFunction = intermediate_callback || ((x) => { })
+        const lastFunction = final_callback || intermediate_callback || (() => { })
         const nrOfSurvivors = this.__internal__.survivorPercent ? Math.ceil(this.__internal__.survivors * this.__internal__.max_population) : this.__internal__.survivors
         const options = {
             generations: this.__internal__.generations,
