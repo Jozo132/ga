@@ -1,11 +1,6 @@
 // @ts-check
 'use strict'
 
-const padStart = (str, len, def) => { str = str.toString(); while (str.length < len) str = (def || ' ') + str; return str }
-
-const sqrt = x => Math.sqrt(x)
-const sq = x => x * x
-
 
 const getVector = (...a) => {
     let vectors = Array.isArray(a[0]) ? a[0] : a
@@ -169,10 +164,12 @@ trainer.setFitnessTimeout(() => {  // Throw error if fitness takes too long to c
 trainer.letBestSurvive(true)
 
 console.log(`Training the trainer now!`)
-trainer.evolve(20, results => {
-    console.log(`Gen: ${padStart(results.generation, 3, ' ')}  Pop: ${results.population}   finished in ${padStart(results.time, 4, ' ')} ms    Best fitness: ${results.fitness >= 0 ? ' ' + results.fitness.toFixed(12) : results.fitness.toFixed(12)} => ${JSON.stringify(results.parameters)}`)
-    if (results.finished) {
-        console.log(`\nFINISHED => Generations ${padStart(results.generation, 3, ' ')} each ${results.population} population finished in total ${padStart(results.totalTime, 4, ' ')} ms    Best fitness: ${results.fitness >= 0 ? ' ' + results.fitness.toFixed(12) : results.fitness.toFixed(12)} => ${JSON.stringify(results.parameters)}`)
 
+trainer.evolve(100,
+    (status) => { // Progress
+        console.log(status.message)
+    },
+    (finalStatus) => { // Final results
+        console.log(finalStatus.message)
     }
-})
+)

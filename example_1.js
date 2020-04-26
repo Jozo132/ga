@@ -1,9 +1,6 @@
 // @ts-check
 'use strict'
 
-const padStart = (str, len, def) => { str = str.toString(); while (str.length < len) str = (def || ' ') + str; return str }
-
-
 const initalInput = {
     //x: 1,
     //y: 1,
@@ -91,10 +88,12 @@ trainer.setFitnessTimeout(() => {  // Throw error if fitness takes too long to c
 
 trainer.letBestSurvive(true)
 
-trainer.evolve(100, results => {
-    console.log(`Gen: ${padStart(results.generation, 3, ' ')}  Pop: ${results.population}  PMF: ${results.proportional_mutation_factor.toFixed(3)} finished in ${padStart(results.time, 4, ' ')} ms    Best fitness: ${results.fitness >= 0 ? ' ' + results.fitness.toFixed(15) : results.fitness.toFixed(15)} => ${JSON.stringify(results.parameters)}`)
-    if (results.finished) {
-        console.log(`FINISHED in ${padStart(results.totalTime, 4, ' ')} ms    Best fitness: ${results.fitness >= 0 ? ' ' + results.fitness.toFixed(12) : results.fitness.toFixed(12)} => ${JSON.stringify(results.parameters)}`)
-        console.log(`Test ${MY_FUNCTION.toString()}    ---> ${MY_FUNCTION(results.parameters.x, results.parameters.y, results.parameters.z)}`)
+trainer.evolve(100,
+    (status) => { // Progress
+        console.log(status.message)
+    },
+    (finalStatus) => { // Final results
+        console.log(finalStatus.message)
+        console.log(`Test ${MY_FUNCTION.toString()}    ---> ${MY_FUNCTION(finalStatus.parameters)}`)
     }
-})
+)
