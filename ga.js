@@ -245,6 +245,11 @@ const fitnessTestPopulationASYNC = (population, options, callback) => {
                 gotResponse = true
                 sanityPause.execute(() => onEachFitnessDone(child, result))
             }
+        }
+        const fitnessOutput = options.calculateFitness(child, fitnessCallback)
+        if (fitnessOutput >= 0 || fitnessOutput < 0) fitnessCallback(fitnessOutput)
+    })
+}
 
 const populationSelection = (population, options, callback) => {
     population = population.sort((a, b) => fitnessSort(options.fitnessTargetValue, a, b))
