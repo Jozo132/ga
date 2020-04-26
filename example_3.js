@@ -2,27 +2,11 @@
 'use strict'
 
 const GA = require('./ga')
-
 const trainer = new GA()
 
-trainer.setParameters({
-    variable: ['x', 'y'],
-    type: 'number',
-    range: { min: -2, max: 2 },
-    snap: 0.01
-})
+const parameters = { variable: ['x', 'y'], type: 'number', range: { min: -2, max: 2 }, snap: 0.01 }
 
-
-trainer.setMaxPopulation(1000)
-trainer.setSurvivorsPERCENT(0.05)
-
-
-trainer.setCrossoverChance(0.05)
-trainer.setMutationChance(0.45)
-trainer.setMutationPower(0.1)
-
-
-trainer.letBestSurvive(true)
+const desiredOutput = 3
 
 const test = (x, y) => {
     const a = 1 + (x + y + 1) ** 2 * (19 - 14 * x + 3 * x ** 2 - 14 * y + 6 * x * y + 3 * y ** 2)
@@ -31,15 +15,28 @@ const test = (x, y) => {
     return output
 }
 
-const fitnessFunction = (sample, /* callback */) => {
-    //callback(test(sample)) // optional async callback
+const fitnessFunction = (sample, /* callback */) => {   // optional async callback
     const { x, y } = sample
-    return test(x, y)
+    const output = test(x, y)
+    //callback(output) 
+    return output - desiredOutput
 }
 
-trainer.setFitnessTargetValue(3)
-
-trainer.setFitnessFunction(fitnessFunction)
+trainer.configure({
+    //debug: false,
+    maxPopulation: 1000,
+    survivorsPERCENT: 0.05,
+    crossoverChance: 0.05,
+    mutationChance: 0.45,
+    mutationPower: 0.1,
+    bestSurvive: true,
+    parameters: parameters,
+    //initialValues: { x: 0, y: 0 },
+    fitnessFunction: fitnessFunction,
+    fitnessTargetValue: 0,
+    fitnessTimeout: 10000,
+    fitnessTimeoutFunction: () => { throw 'Training timeout!' }
+})
 
 trainer.evolve(100,
     (status) => { // Progress
@@ -48,6 +45,6 @@ trainer.evolve(100,
     (finalStatus) => { // Final results
         console.log(finalStatus.message)
         const { x, y } = finalStatus.parameters
-        console.log(`Test ${test.toString()}    ---> ${test(x, y)}`)
+        console.log(`Test ${test.toString()}    --->    ${test(x, y)}`)
     }
 )
