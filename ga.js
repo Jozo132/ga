@@ -332,7 +332,24 @@ module.exports = class Model {
         this.generations = []
     };
 
-    setParameters = (...params) => this.parameters = isArray(params[0]) ? params[0] : params
+    setParameters = (...params) => {
+        const inputParameters = isArray(params[0]) ? params[0] : params
+        const outputParameters = []
+        inputParameters.forEach(param => {
+            if (isArray(param.variable)) {
+                param.variable.forEach(p => {
+                    const generatedParam = { variable: p, type: param.type }
+                    if (param.range) generatedParam.range = param.range
+                    if (param.snap) generatedParam.snap = param.snap
+                    if (param.options) generatedParam.options = param.options
+                    outputParameters.push(generatedParam)
+                })
+            } else {
+                outputParameters.push(param)
+            }
+        })
+        this.parameters = outputParameters
+    }
     setFitnessTargetValue = t => this.fitnessTargetValue = t || 0
     setFitnessTargetTolerance = t => this.fitnessTargetTolerance = t || 0
     setFitnessTimeout = (callback, to) => { this.throwTimeout = callback || this.throwTimeoutDefault; this.fitnessTimeout = to || 10000 }
