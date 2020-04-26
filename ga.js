@@ -327,6 +327,7 @@ module.exports = class Model {
         this.parameters = []
         this.initialParams = {}
         this.calculateFitness = () => 0
+        this.stopFitness = x => false
         this.throwTimeout = () => this.throwTimeoutDefault()
         this.throwTimeoutDefault = () => console.log('ERROR: Generation check timeout')
         this.generations = []
