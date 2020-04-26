@@ -247,7 +247,7 @@ const fitnessTestPopulationASYNC = (population, options, callback) => {
             }
         }
         const fitnessOutput = options.calculateFitness(child, fitnessCallback)
-        if (fitnessOutput >= 0 || fitnessOutput < 0 || isNaN(fitnessOutput)) fitnessCallback(fitnessOutput)
+        if (fitnessOutput !== undefined) fitnessCallback(fitnessOutput)
     })
 }
 
