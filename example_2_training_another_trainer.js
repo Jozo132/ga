@@ -2,7 +2,7 @@
 'use strict'
 
 
-const GA = require('./ga')
+const GA = require('./vovk-ga')
 
 const getVector = (...a) => Math.sqrt((Array.isArray(a[0]) ? a[0] : a).reduce((sum, val) => sum += val ** 2, 0))
 
