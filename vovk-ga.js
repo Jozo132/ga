@@ -76,12 +76,12 @@ const exampleParameter_b = {
 
 
 const generateRandomParameter = param => {
-    let type = param.type || 'number'
+    const type = param.type || 'number'
     if (type === 'option') {
-        let options = param.options || [0, 1]
+        const options = param.options || [0, 1]
         return randomArrayItem(options)
     } else {
-        let range = param.range || { min: 0, max: 100 }
+        const range = param.range || { min: 0, max: 100 }
         let output = type === 'integer' ? randomOfRangeInt(range.min, range.max) : randomOfRange(range.min, range.max)
         if (param.snap > 0) output = snapNumber(output, param.snap)
         return output
@@ -90,11 +90,11 @@ const generateRandomParameter = param => {
 
 
 const mutate_number = (num, param, options, child_proportional_position) => {
-    let sign = chance(0.5) ? 1 : -1
-    let range = param.range || { min: 0, max: 100 }
-    let snap = param.snap
-    let max_width = abs(range.max - range.min)
-    let dif = (max_width > 1 ? 1 : max_width) * random() * options.mutation.power * options.proportional_mutation_factor * child_proportional_position * 100
+    const sign = chance(0.5) ? 1 : -1
+    const range = param.range || { min: 0, max: 100 }
+    const snap = param.snap
+    const max_width = abs(range.max - range.min)
+    const dif = (max_width > 1 ? 1 : max_width) * random() * options.mutation.power * options.proportional_mutation_factor * child_proportional_position * 100
     let output = num + sign * dif
     output = (param.type === 'integer') ? floor(output) : output
     if (snap > 0) output = snapNumber(output, snap)
@@ -103,14 +103,14 @@ const mutate_number = (num, param, options, child_proportional_position) => {
 }
 
 const mutateParameter = (value, param, options, child_proportional_position) => {
-    let _chance = chance(options.mutation.chance)
-    let type = param.type || 'number'
+    const m_chance = () => chance(options.mutation.chance)
+    const type = param.type || 'number'
     if (type === 'option') {
-        let p_options = param.options || [0, 1]
-        if (_chance) return randomArrayItem(p_options)
+        const p_options = param.options || [0, 1]
+        if (m_chance()) return randomArrayItem(p_options)
         else return value
     } else {
-        if (_chance) return mutate_number(value, param, options, child_proportional_position)
+        if (m_chance()) return mutate_number(value, param, options, child_proportional_position)
         else return value
     }
 }
