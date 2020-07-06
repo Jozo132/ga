@@ -30,7 +30,9 @@ const abs = Math.abs
 const PI = Math.PI
 
 class TinyPause { constructor(nr_of_calls) { this.call_index = 0; this.nr_of_calls = +nr_of_calls || 10000; }; execute = f => { this.call_index++; if (this.call_index >= this.nr_of_calls) { this.call_index = 0; setTimeout(f, 0); } else f() } }
-const sanityPause = new TinyPause(10000)
+const sanityPause = new TinyPause(10000).execute
+const isPromise = o => !!o && (typeof o === 'object' || typeof o === 'function') && typeof o.then === 'function'
+const isValidFitnessResult = x => x >= 0 || x < 0 || isNaN(x)
 
 const chance = pct => random() <= pct
 const isArray = a => Array.isArray(a)
