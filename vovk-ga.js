@@ -21,6 +21,8 @@
 // @ts-check
 'use strict'
 
+const { isString } = require("util")
+
 const random = Math.random
 const floor = Math.floor
 const round = Math.round
