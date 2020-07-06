@@ -445,15 +445,7 @@ const info = process.argv.reduce((hasInfo, arg) => hasInfo = hasInfo || (arg ===
 let function_input = cli_input['f'] || cli_input['function']
 const functionName = isNaN(+function_input) ? function_input : 'F' + function_input
 const temp_f = benchmarks[functionName]
-if (info) {
-    Object.keys(benchmarks).forEach((name, index) => {
-        let message = ''
-        if (index > 0) message += `-------------------------------------\n`
-        const bench = benchmarks[name]
-        message += `Benchmark ${index + 1}` + bench.info
-        console.log(message)
-    })
-} else if (temp_f) {
+if (temp_f) {
     const name = functionName
     const gens = cli_input['g'] || cli_input['gen'] || cli_input['generations'] || 10
     const pop = cli_input['p'] || cli_input['pop'] || cli_input['population'] || 50
@@ -461,7 +453,13 @@ if (info) {
     const mutChance = cli_input['mc'] || cli_input['mutChance'] || 0.2
     const mutPower = cli_input['mp'] || cli_input['mutPower'] || 100
     if (name) trainBenchmarFunction(name, { generations: gens, population: pop, mutationChance: mutChance, mutationPower: mutPower, crossover: crossover })
-    else throw `Benchmark function name '${cli_input[0]}' doesn't exist, plase use this command '--function=1'`
+    else throw `Benchmark function name '${cli_input[0]}' doesn't exist, plase use this command '--function=mvfBeale'`
 } else {
-    console.log(`Function argument invalid: '${functionName}'. Please add an input argument to this command '--function=1'`)
+    Object.keys(benchmarks).forEach((name, index) => {
+        let message = ''
+        if (index > 0) message += `-------------------------------------\n`
+        const bench = benchmarks[name]
+        message += `Benchmark ${index + 1}` + bench.info
+        console.log(message)
+    })
 }
