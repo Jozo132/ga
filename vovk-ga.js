@@ -400,6 +400,7 @@ class Trainer {
         if (config.mutationChance !== undefined) this.setMutationChance(config.mutationChance)
         if (config.mutationPower !== undefined) this.setMutationPower(config.mutationPower)
         if (config.fitnessTargetValue !== undefined) this.setFitnessTargetValue(config.fitnessTargetValue)
+        if (config.fitnessTargetTolerance !== undefined) this.setFitnessTargetTolerance(config.fitnessTargetTolerance)
         if (config.bestSurvive !== undefined) this.letBestSurvive(config.bestSurvive)
         if (config.fitnessFunction !== undefined) this.setFitnessFunction(config.fitnessFunction)
 
