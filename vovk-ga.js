@@ -45,9 +45,16 @@ const cloneChild = original => { let cloned_child = {}; forEachObj(original, (pr
 const generateChildID = (child, keys) => keys.map(k => child[k]).join('')
 const getUniquePopulation = (population, params) => { const result = []; const map = new Map(); const keys = params.map(p => p.variable); for (const child of population) { const id = generateChildID(child, keys); if (!map.has(id)) { map.set(id, true); result.push(child); } } return result }
 
+/** @param {any[]} A * @param {number} [i] */// @ts-ignore
+const rotateArray = (A, i) => { const B = A.map(x => x); i = i || 0; for (let x = 1; x <= i; x++) B.shift(B.push(B[0])); return B }
+/** @param {any[]} A */
+const shuffleArray = A => { const B = A.map(x => x); for (let i = B.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * i); const temp = B[i]; B[i] = B[j]; B[j] = temp } return B }
+/** @param {any[]} A * @param {number} [cnt] */
+const stirArray = (A, cnt) => { cnt = cnt || 1; const B = A.map(x => x); for (let x = 0; x < cnt; x++) { const i = Math.floor(Math.random() * (B.length - 1)); const j = Math.floor(Math.random() * (B.length - 1)); const temp = B[i]; B[i] = B[j]; B[j] = temp } return B }
 const randomOfRange = (min, max) => random() * (max - min) + min
 const randomOfRangeInt = (min, max) => round(randomOfRange(min, max))
 const randomArrayItem = A => A[randomOfRangeInt(0, A.length - 1)]
+const randomArrayItemProb = (A, prob) => { const hashMap = A.map((a, i) => ({ x: a, i: i, p: prob[i] })).sort((a, b) => a.p < b.p ? 1 : -1); const avgSum = hashMap.reduce((p, x) => p + x.p, 0); hashMap.forEach(h => h.p /= avgSum); let index = hashMap.length; const r = random(); let porbSum = 0; while (index > 0 && porbSum < r) { index--; porbSum += hashMap[index].p } return hashMap[index].i }
 
 const padStart = (str, len, def) => { str = str.toString(); while (str.length < len) str = (def || ' ') + str; return str }
 
