@@ -405,41 +405,42 @@ const trainBenchmarFunction = (BM, options, callback) => {
     const name = Number.isInteger(BM) ? 'F' + BM : BM
     const bench = typeof name === 'string' ? benchmarks[name] : BM
     options = options || {}
-    const GA = require('./ga')
+    const { population, crossover, mutationChance, mutationPower, generations: gens } = options
+    const GA = require('./vovk-ga')
     const trainer = new GA()
     if (bench.info) console.log(`Benchmark info:\n` + bench.info);
     (bench.init || (() => { }))();
     trainer.initialize(bench.default)
     trainer.setParameters(bench.params)
-    trainer.setMaxPopulation(options.population || 50)
+    trainer.setMaxPopulation(population || 50)
     //trainer.setSurvivors(3)
     trainer.letBestSurvive(true)
     trainer.setSurvivorsPERCENT(0.05)
-    trainer.setCrossoverChance(options.crossover || 0.25)
-    trainer.setMutationChance(options.mutationChance || 0.2)
-    trainer.setMutationPower(options.mutationPower || 100)
+    trainer.setCrossoverChance(crossover || 0.25)
+    trainer.setMutationChance(mutationChance || 0.2)
+    trainer.setMutationPower(mutationPower || 100)
     trainer.setFitnessTargetValue(bench.targetFitness || 0)
     trainer.setFitnessFunction(bench.fn)
     trainer.setStopFunction(bench.stopFunction)
-    trainer.setFitnessTimeout(() => {  // Throw error if fitness takes too long to calculate
-        console.log('Training timeout!')
-    }, 10000)
-
+    const generations = gens || 10
     //trainer.letBestSurvive(true)
     setTimeout(() => {
         console.log(`Starting benchmark for ${name}`)
-        trainer.evolve(options.generations || 10, results => {
-            let fitness = +results.fitness
-            console.log(`Gen: ${padStart(results.generation, 3, ' ')} Pop: ${results.population} finished in ${padStart(results.time, 4, ' ')} ms    Best fitness: ${fitness >= 0 ? ' ' + fitness.toFixed(9) : fitness.toFixed(9)} ${Object.keys(results.parameters).length < 6 ? `    =>  Best sample: ${JSON.stringify(results.parameters)}` : ''}`)
-            if (results.finished) {
-                console.log(`GEN ${results.generation} ${results.failed ? 'FAILED' : `FINISHED`} in ${padStart(results.totalTime, 4, ' ')} ms    Best fitness: ${fitness >= 0 ? ' ' + fitness.toFixed(9) : fitness.toFixed(9)}     =>  Best sample: ${JSON.stringify(results.parameters)}`)
-                console.log(`Test ${bench.fn.toString()} \nFinal fitness:  ${bench.fn(results.parameters)} `);
-                callback(results)
-            }
+        trainer.evolve(generations, status => {
+            const fitness = +status.fitness
+            console.log(`Gen: ${padStart(status.generation, 3, ' ')} Pop: ${status.population} finished in ${padStart(status.time, 4, ' ')} ms    Best fitness: ${fitness >= 0 ? ' ' + fitness.toFixed(9) : fitness.toFixed(9)} ${Object.keys(status.parameters).length < 6 ? `    =>  Best sample: ${JSON.stringify(status.parameters)}` : ''}`)
+        }).then(results => {
+            const fitness = +results.fitness
+            console.log(`${results.failed ? 'FAILED' : `FINISHED`} in ${padStart(results.totalTime, 4, ' ')} ms    Best fitness: ${fitness >= 0 ? ' ' + fitness.toFixed(9) : fitness.toFixed(9)}     =>  Best sample: ${JSON.stringify(results.parameters)}`)
+            console.log(`Test ${bench.fn.toString()} \nFinal fitness:  ${bench.fn(results.parameters)} `);
+            callback(results)
+        }).catch(e => {
+            throw e
         })
     }, 1000)
 }
 
+// @ts-ignore
 const info = process.argv.reduce((hasInfo, arg) => hasInfo = hasInfo || (arg === 'info' || arg === 'help' || arg === '?'), false)
 let function_input = cli_input['f'] || cli_input['function']
 const functionName = isNaN(+function_input) ? function_input : 'F' + function_input
