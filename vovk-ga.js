@@ -154,99 +154,114 @@ const mutateParameter = (value, param, options, child_proportional_position) => 
     }
 }
 
-const generatePopulation = (generations, options, callback) => {
-    let myPopulation = []
-    // If this is the first generation ...
-    if (generations.length === 0) {
-        // Generate new population based on initial parameter values OR random parameter values
-        for (let i = 0; i < options.max_population; i++) {
-            let child = {}
-            options.parameters.forEach(param => {
-                child[param.variable] = options.initialParams[param.variable] || generateRandomParameter(param)
-            })
-            myPopulation.push(child)
-        }
-    } else {
-        let previousBest = generations[generations.length - 1].best
-        if (options.bestSurvive) {
-            // Retain best parents in new population
-            previousBest.forEach(best_child => {
-                let child = cloneChild(best_child)
-                delete child.__fitness__
-                myPopulation.push(child)
-            })
-            // Fill remaining population with random previous best
-            for (let i = previousBest.length - 1; i < options.max_population; i++) {
-                let child = cloneChild(randomArrayItem(previousBest))
-                delete child.__fitness__
+const generatePopulation = (generations, options) => new Promise((resolve, reject) => {
+    try {
+        const myPopulation = []
+        // If this is the first generation ...
+        if (generations.length === 0) {
+            // Generate new population based on initial parameter values OR random parameter values
+            for (let i = 0; i < options.max_population; i++) {
+                const child = {}
+                options.parameters.forEach(param => {
+                    child[param.variable] = options.initialParams[param.variable] || generateRandomParameter(param)
+                })
                 myPopulation.push(child)
             }
         } else {
-            // Generate all new generation based on previous best
-            for (let i = 0; i < options.max_population; i++) {
-                let child = cloneChild(randomArrayItem(previousBest))
-                delete child.__fitness__
-                myPopulation.push(child)
+            const previousBest = generations[generations.length - 1].best
+            if (options.bestSurvive) {
+                // Retain best parents in new population
+                previousBest.forEach(best_child => {
+                    const child = cloneChild(best_child)
+                    delete child.__fitness__
+                    myPopulation.push(child)
+                })
+                // Fill remaining population with random previous best
+                for (let i = previousBest.length - 1; i < options.max_population; i++) {
+                    const child = cloneChild(randomArrayItem(previousBest))
+                    delete child.__fitness__
+                    myPopulation.push(child)
+                }
+            } else {
+                // Generate all new generation based on previous best
+                for (let i = 0; i < options.max_population; i++) {
+                    const child = cloneChild(randomArrayItem(previousBest))
+                    delete child.__fitness__
+                    myPopulation.push(child)
+                }
             }
         }
-    }
-    sanityPause.execute(() => callback(myPopulation))
-}
+        sanityPause(() => {
+            if (options.verbose) console.log('Created population', myPopulation)
+            resolve(myPopulation)
+        })
+    } catch (e) { reject(e) }
+})
 
 
-const crossoverPopulation = (population, options, callback) => {
-    if (options.bestSurvive) {
-        // Do crossover only on new population, do not crossover original parents
-        let newPopulation = population.slice(options.nrOfSurvivors)
-        newPopulation.forEach(child_a => {
-            options.parameters.forEach(param => {
-                if (chance(options.crossoverChance)) {
-                    const child_b = randomArrayItem(newPopulation)
-                    const param_a = child_a[param.variable]
-                    const param_b = child_b[param.variable]
-                    child_a[param.variable] = param_b
-                    child_b[param.variable] = param_a
-                }
+const crossoverPopulation = (population, options) => new Promise((resolve, reject) => {
+    try {
+        if (options.bestSurvive) {
+            // Do crossover only on new population, do not crossover original parents
+            const newPopulation = population.slice(options.nrOfSurvivors)
+            newPopulation.forEach(child_a => {
+                options.parameters.forEach(param => {
+                    if (chance(options.crossoverChance)) {
+                        const child_b = randomArrayItem(newPopulation)
+                        const param_a = child_a[param.variable]
+                        const param_b = child_b[param.variable]
+                        child_a[param.variable] = param_b
+                        child_b[param.variable] = param_a
+                    }
+                })
             })
-        })
-    } else {
-        // Do crossover on whole population
-        population.forEach(child_a => {
-            options.parameters.forEach(param => {
-                if (chance(options.crossoverChance)) {
-                    const child_b = randomArrayItem(population)
-                    const param_a = child_a[param.variable]
-                    const param_b = child_b[param.variable]
-                    child_a[param.variable] = param_b
-                    child_b[param.variable] = param_a
-                }
+        } else {
+            // Do crossover on whole population
+            population.forEach(child_a => {
+                options.parameters.forEach(param => {
+                    if (chance(options.crossoverChance)) {
+                        const child_b = randomArrayItem(population)
+                        const param_a = child_a[param.variable]
+                        const param_b = child_b[param.variable]
+                        child_a[param.variable] = param_b
+                        child_b[param.variable] = param_a
+                    }
+                })
             })
+        }
+        sanityPause(() => {
+            if (options.verbose) console.log('Crossover population', population)
+            resolve(population)
         })
-    }
-    sanityPause.execute(() => callback(population))
-}
+    } catch (e) { reject(e) }
+})
 
-const mutatePopulation = (population, options, callback) => {
-    if (options.bestSurvive) {
-        // Do mutation only on new population, do not mutate original parents
-        let newPopulation = population.slice(options.nrOfSurvivors)
-        newPopulation.forEach((child, index) => {
-            const child_proportional_position = index / newPopulation.length
-            options.parameters.forEach(param => {
-                child[param.variable] = mutateParameter(child[param.variable], param, options, child_proportional_position)
+const mutatePopulation = (population, options) => new Promise((resolve, reject) => {
+    try {
+        if (options.bestSurvive) {
+            // Do mutation only on new population, do not mutate original parents
+            const newPopulation = population.slice(options.nrOfSurvivors)
+            newPopulation.forEach((child, index) => {
+                const child_proportional_position = index / newPopulation.length
+                options.parameters.forEach(param => {
+                    child[param.variable] = mutateParameter(child[param.variable], param, options, child_proportional_position)
+                })
             })
-        })
-    } else {
-        // Do mutation on whole population
-        population.forEach((child, index) => {
-            const child_proportional_position = index / population.length
-            options.parameters.forEach(param => {
-                child[param.variable] = mutateParameter(child[param.variable], param, options, child_proportional_position)
+        } else {
+            // Do mutation on whole population
+            population.forEach((child, index) => {
+                const child_proportional_position = index / population.length
+                options.parameters.forEach(param => {
+                    child[param.variable] = mutateParameter(child[param.variable], param, options, child_proportional_position)
+                })
             })
+        }
+        sanityPause(() => {
+            if (options.verbose) console.log('Mutated population', population)
+            resolve(population)
         })
-    }
-    sanityPause.execute(() => callback(population))
-}
+    } catch (e) { reject(e) }
+})
 
 const fitnessSort = (target, a, b) => {
     if (a.__failed__) return 1
@@ -264,106 +279,154 @@ const fitnessSort = (target, a, b) => {
     return (A_dif > B_dif ? +1 : -1)
 }
 
-const fitnessTestPopulationASYNC = (population, options, callback) => {
+const fitnessTestPopulationASYNC = (population, options) => new Promise((resolve, reject) => {
     // Filter out identical children and only keep uniques
-    let uniquePopulation = getUniquePopulation(population, options.parameters)
-    let i = 0
-    let startTime = +new Date()
-    let timeout = false
-    let timeout_event = setTimeout(() => {  // In case population fitness check takes too long, return timeout error
-        timeout = true
-        options.throwTimeout()
-        callback(null)
-    }, options.fitnessTimeout)
-    const onEachFitnessDone = (child, fitness) => {
-        i++
-        if (options.verbose) console.log(`Child ${padStart(`#${i}`, 5, ' ')} fitness response in ${+new Date() - startTime} ms. Fitness: ${fitness}   Output: ${JSON.stringify(child)}`)
-        if (isNumber(fitness)) child.__fitness__ = fitness
-        else child.__failed__ = true
-        if (i === uniquePopulation.length && !timeout) {
-            clearTimeout(timeout_event) // Disable timeout beacuse population fitness check finished in time
-            uniquePopulation = uniquePopulation.sort((a, b) => fitnessSort(options.fitnessTargetValue, a, b))
-            sanityPause.execute(() => callback(uniquePopulation))
-        }
-    }
-
-    if (options.verbose) console.log('Testing a population of', uniquePopulation.length)
-    uniquePopulation.forEach(child => {
-        let gotResponse = false
-        const fitnessCallback = result => {
-            if (!gotResponse) {
-                gotResponse = true
-                sanityPause.execute(() => onEachFitnessDone(child, result))
+    try {
+        let uniquePopulation = getUniquePopulation(population, options.parameters)
+        let i = 0
+        const startTime = +new Date()
+        let timeout = false
+        const timeout_event = setTimeout(() => {  // In case population fitness check takes too long, return timeout error
+            timeout = true
+            reject('timeout')
+        }, options.fitnessTimeout)
+        const onEachFitnessDone = (child, fitness) => {
+            i++
+            if (options.verbose) console.log(`Child ${padStart(`#${i}`, 5, ' ')} fitness response in ${+new Date() - startTime} ms. Fitness: ${fitness}   Output: ${JSON.stringify(child)}`)
+            if (isNumber(fitness)) child.__fitness__ = fitness
+            else child.__failed__ = true
+            if (i === uniquePopulation.length && !timeout) {
+                clearTimeout(timeout_event) // Disable timeout beacuse population fitness check finished in time
+                uniquePopulation = uniquePopulation.sort((a, b) => fitnessSort(options.fitnessTargetValue, a, b))
+                sanityPause(() => {
+                    if (options.verbose) console.log('Fitness tested population done', uniquePopulation)
+                    resolve(uniquePopulation)
+                })
             }
         }
-        const fitnessOutput = options.calculateFitness(child, fitnessCallback)
-        if (fitnessOutput !== undefined) fitnessCallback(fitnessOutput)
-    })
-}
 
-const populationSelection = (population, options, callback) => {
-    population = population.sort((a, b) => fitnessSort(options.fitnessTargetValue, a, b))
-    if (options.verbose) console.log(`Selection top ${options.survivorPercent ? `${(options.survivors * 100)}%  =>  ${options.nrOfSurvivors}/${population.length}` : `${options.survivorPercent}/${population.length}`}`)
-    sanityPause.execute(() => callback(population.slice(0, options.nrOfSurvivors)))
-}
-
-
-
-
-const EVLOLVE_ONE_GEN = (options, callback) => {
-    let startTime = +new Date()
-    // 1. Generate population based on parents or initial values or random
-    generatePopulation(options.generations, options, new_population => {
-        if (options.verbose) console.log('Created population', new_population)
-        // 2. Crossover population
-        crossoverPopulation(new_population, options, crossover_population => {
-            if (options.verbose) console.log('Crossover population', crossover_population)
-            // 3. Mutate population
-            mutatePopulation(crossover_population, options, mutated_population => {
-                if (options.verbose) console.log('Mutated population', mutated_population)
-                // 4. Fitness test them
-                fitnessTestPopulationASYNC(mutated_population, options, (tested_population, error) => {
-                    if (error) throw error
-                    if (options.verbose) console.log('Fitness tested population done', tested_population)
-                    // 5. Select best
-                    populationSelection(tested_population, options, best => {
-                        let thisGeneration = {
-                            index: options.generations.length + 1,
-                            duration: +new Date() - startTime,
-                            best: best
-                        }
-                        if (options.verbose) console.log(`Generation ${thisGeneration.index} finished. Best fitness: ${thisGeneration.best[0].__fitness__}`)
-
-                        // Only remember single best from each past generation, except for the last generation remember all survivors
-                        if (options.generations.length > 0) options.generations[options.generations.length - 1].best = [options.generations[options.generations.length - 1].best[0]]
-
-                        options.generations.push(thisGeneration)
-                        if (options.generations.length > 5000) options.generations.shift()
-
-                        let new_proportional_mutation_factor = abs(options.fitnessTargetValue - thisGeneration.best[0].__fitness__)
-                        if (options.verbose) console.log(`Proportional mutation power changed: ${options.proportional_mutation_factor} => ${new_proportional_mutation_factor}`)
-
-                        let thisBest = cloneChild(thisGeneration.best[0])
-                        let fitness = thisBest.__fitness__
-                        delete thisBest.__fitness__
-                        callback({
-                            generation: thisGeneration.index,
-                            population: options.max_population,
-                            time: thisGeneration.duration,
-                            fitness: fitness,
-                            parameters: thisBest,
-                            proportional_mutation_factor: new_proportional_mutation_factor
-                        })
-                    })
-                })
-            })
+        if (options.verbose) console.log('Testing a population of', uniquePopulation.length)
+        uniquePopulation.forEach(child => {
+            let gotResponse = false
+            const fitnessCallback = result => {
+                if (!gotResponse) {
+                    gotResponse = true
+                    sanityPause(() => onEachFitnessDone(child, result))
+                }
+            }
+            const fitnessOutput = options.calculateFitness(child, fitnessCallback) // Handle async callback
+            if (isPromise(fitnessOutput)) fitnessOutput.then(fitnessCallback).catch(reject) // Handle async promise
+            else if (isValidFitnessResult(fitnessOutput)) fitnessCallback(fitnessOutput) // Handle directly returned output
         })
-    })
-}
+    } catch (e) { reject(e) }
+})
 
-const throwTimeoutDefault = () => console.log('ERROR: Generation check timeout')
+const populationSelection = (population, options) => new Promise((resolve, reject) => {
+    try {
+        population = population.sort((a, b) => fitnessSort(options.fitnessTargetValue, a, b))
+        if (options.verbose) console.log(`Selection top ${options.survivorPercent ? `${(options.survivors * 100)}%  =>  ${options.nrOfSurvivors}/${population.length}` : `${options.survivorPercent}/${population.length}`}`)
+        sanityPause(() => resolve(population.slice(0, options.nrOfSurvivors)))
+    } catch (e) { reject(e) }
+})
+
+
+
+
+const EVLOLVE = (options, progress_callback) => new Promise((resolve, reject) => {
+    try {
+        progress_callback = progress_callback || ((x) => { })
+        options = options || {}
+        const O = options
+
+        O.currentGeneration = O.currentGeneration || 0
+        O.maxGenerations = O.maxGenerations > 0 ? O.maxGenerations : 1
+        O.totalTime = O.totalTime || 0
+        O.generations = O.generations
+        O.parameters = O.parameters
+        O.initialParams = O.initialParams
+        O.max_population = O.max_population
+        O.survivors = O.survivors
+        O.nrOfSurvivors = O.nrOfSurvivors
+        O.survivorPercent = O.survivorPercent
+        O.fitnessTargetValue = O.fitnessTargetValue
+        O.fitnessTargetTolerance = O.fitnessTargetTolerance
+        O.fitnessTimeout = O.fitnessTimeout
+        O.stopFitness = O.stopFitness
+        O.crossoverChance = O.crossoverChance
+        O.mutation = O.mutation || { chance: 0.1, power: 0.1 }
+        O.proportional_mutation_factor = O.proportional_mutation_factor
+        O.calculateFitness = O.calculateFitness
+        O.bestSurvive = O.bestSurvive
+        O.verbose = O.verbose
+
+        if (options.verbose) console.log(options)
+        //throw ''
+        const iterate = () => {
+            options.currentGeneration++
+            let startTime = +new Date()
+
+            const finishGeneration = best => {
+                const thisGeneration = {
+                    index: options.generations.length + 1,
+                    duration: +new Date() - startTime,
+                    best: best
+                }
+                if (options.verbose) console.log(`Generation ${thisGeneration.index} finished. Best fitness: ${thisGeneration.best[0].__fitness__}`)
+
+                // Only remember single best from each past generation, except for the last generation remember all survivors
+                if (options.generations.length > 0) options.generations[options.generations.length - 1].best = [options.generations[options.generations.length - 1].best[0]]
+
+                options.generations.push(thisGeneration)
+                if (options.generations.length > 5000) options.generations.shift()
+
+                let new_proportional_mutation_factor = abs(options.fitnessTargetValue - thisGeneration.best[0].__fitness__)
+                if (options.verbose) console.log(`Proportional mutation power changed: ${options.proportional_mutation_factor} => ${new_proportional_mutation_factor}`)
+
+                let thisBest = cloneChild(thisGeneration.best[0])
+                let fitness = thisBest.__fitness__
+                delete thisBest.__fitness__
+
+                const generationsDone = options.currentGeneration >= options.maxGenerations
+                const targetFitnessDone = options.fitnessTargetValue - fitness === 0 || abs(options.fitnessTargetValue - fitness) < options.fitnessTargetTolerance
+                const stopFitnessDone = options.stopFitness(fitness)
+
+                const finished = generationsDone || targetFitnessDone || stopFitnessDone
+
+                options.totalTime += thisGeneration.duration;
+                options.proportional_mutation_factor = new_proportional_mutation_factor
+
+                const output = {
+                    finished,
+                    generation: thisGeneration.index,
+                    population: options.max_population,
+                    time: thisGeneration.duration,
+                    totalTime: options.totalTime,
+                    fitness: fitness,
+                    parameters: thisBest,
+                    proportional_mutation_factor: new_proportional_mutation_factor
+                }
+                if (options.verbose && finished) console.log('Evolution finished it seems ...')
+                progress_callback(output)
+                if (finished) resolve(output)
+                else iterate()
+            }
+
+            generatePopulation(options.generations, options)
+                .then(P => crossoverPopulation(P, options))
+                .then(P => mutatePopulation(P, options))
+                .then(P => fitnessTestPopulationASYNC(P, options))
+                .then(P => populationSelection(P, options))
+                .then(P => finishGeneration(P))
+                .catch(reject)
+
+        }
+        iterate()
+    } catch (e) { reject(e) }
+})
+
 
 class Trainer {
+    /** @param {{ parameters?: any; debug?: boolean; initialValues?: any; maxPopulation?: number; survivors?: number; survivorsPERCENT?: number; crossoverChance?: number; mutationChance?: number; mutationPower?: number; fitnessTargetValue?: number; fitnessTargetTolerance? : number; bestSurvive?: boolean; fitnessFunction?: any; fitnessTimeout?: any; }} [config] */
     constructor(config) {
         this.__internal__ = {
             max_population: 100,
@@ -381,13 +444,13 @@ class Trainer {
             initialParams: {},
             calculateFitness: () => 0,
             stopFitness: x => false,
-            throwTimeout: () => throwTimeoutDefault(),
             generations: []
 
         }
         this.configure(config)
     };
 
+    /** @param {{ parameters?: object | Array; debug?: boolean; initialValues?: any; maxPopulation?: number; survivors?: number; survivorsPERCENT?: number; crossoverChance?: number; mutationChance?: number; mutationPower?: number; fitnessTargetValue?: number; fitnessTargetTolerance? : number; bestSurvive?: boolean; fitnessFunction?: any; fitnessTimeout?: any; }} config */
     configure = (config) => {
         config = config || {}
         if (config.parameters !== undefined) this.setParameters(config.parameters)
@@ -409,7 +472,8 @@ class Trainer {
     setParameters = (...params) => {
         const inputParameters = isArray(params[0]) ? params[0] : params
         const outputParameters = []
-        inputParameters.forEach(param => {
+
+        const addNumber = (param) => {
             if (isArray(param.variable)) {
                 param.variable.forEach(p => {
                     const generatedParam = { variable: p, type: param.type }
@@ -523,81 +587,73 @@ class Trainer {
     // 3. Do mutate
     // 4. Do fitness test
     // 5. Select best
-    evolveOneGeneration = callback => {
-        const nrOfSurvivors = this.__internal__.survivorPercent ? Math.ceil(this.__internal__.survivors * this.__internal__.max_population) : this.__internal__.survivors
-        const options = {
-            generations: this.__internal__.generations,
-            parameters: this.__internal__.parameters,
-            initialParams: this.__internal__.initialParams,
-            max_population: this.__internal__.max_population,
-            survivors: this.__internal__.survivors,
-            nrOfSurvivors: nrOfSurvivors,
-            survivorPercent: this.__internal__.survivorPercent,
-            fitnessTargetValue: this.__internal__.fitnessTargetValue,
-            fitnessTargetTolerance: this.__internal__.fitnessTargetTolerance,
-            fitnessTimeout: this.__internal__.fitnessTimeout,
-            throwTimeout: this.__internal__.throwTimeout,
-            crossoverChance: this.__internal__.crossoverChance,
-            mutation: this.__internal__.mutation || { chance: 0.1, power: 0.1 },
-            proportional_mutation_factor: this.__internal__.proportional_mutation_factor,
-            calculateFitness: this.__internal__.calculateFitness,
-            bestSurvive: this.__internal__.bestSurvive,
-            verbose: this.__internal__.verbose
-        }
-        EVLOLVE_ONE_GEN(options, result => {
-            result.totalTime = result.time
-            this.__internal__.proportional_mutation_factor = result.proportional_mutation_factor
-            result.finished = true
-            callback(result)
-        })
-    }
-    evolve = (generation_count, intermediate_callback, final_callback) => {
-        const middleFunction = intermediate_callback || ((x) => { })
-        const lastFunction = final_callback || intermediate_callback || (() => { })
-        const nrOfSurvivors = this.__internal__.survivorPercent ? Math.ceil(this.__internal__.survivors * this.__internal__.max_population) : this.__internal__.survivors
-        const options = {
-            generations: this.__internal__.generations,
-            parameters: this.__internal__.parameters,
-            initialParams: this.__internal__.initialParams,
-            max_population: this.__internal__.max_population,
-            survivors: this.__internal__.survivors,
-            nrOfSurvivors: nrOfSurvivors,
-            survivorPercent: this.__internal__.survivorPercent,
-            fitnessTargetValue: this.__internal__.fitnessTargetValue,
-            fitnessTargetTolerance: this.__internal__.fitnessTargetTolerance,
-            fitnessTimeout: this.__internal__.fitnessTimeout,
-            throwTimeout: this.__internal__.throwTimeout,
-            crossoverChance: this.__internal__.crossoverChance,
-            mutation: this.__internal__.mutation || { chance: 0.1, power: 0.1 },
-            proportional_mutation_factor: this.__internal__.proportional_mutation_factor,
-            calculateFitness: this.__internal__.calculateFitness,
-            bestSurvive: this.__internal__.bestSurvive,
-            verbose: this.__internal__.verbose
-        }
-        let cycle = 0;
-        let totalTime = 0;
-        const iterate = () => {
-            cycle++
-            EVLOLVE_ONE_GEN(options, result => {
-                totalTime += result.time
-                result.totalTime = totalTime
-                this.__internal__.proportional_mutation_factor = result.proportional_mutation_factor
-                if (cycle < generation_count && abs(this.__internal__.fitnessTargetValue - result.fitness) > options.fitnessTargetTolerance && !this.__internal__.stopFitness(result.fitness)) {
-                    options.proportional_mutation_factor = result.proportional_mutation_factor
-                    result.message = `Gen: ${result.generation.toString().padStart(3, ' ')}  Pop: ${result.population}  PMF: ${result.proportional_mutation_factor.toFixed(3)} finished in ${result.time.toString().padStart(4, ' ')} ms    Best fitness: ${result.fitness >= 0 ? ' ' + result.fitness.toFixed(15) : result.fitness.toFixed(15)} => ${JSON.stringify(result.parameters).substring(0, 150)}`
-                    middleFunction(result)
-                    iterate()
-                } else {
-                    result.finished = true
-                    result.message = `Gen: ${result.generation.toString().padStart(3, ' ')}  Pop: ${result.population}  PMF: ${result.proportional_mutation_factor.toFixed(3)} finished in ${result.time.toString().padStart(4, ' ')} ms    Best fitness: ${result.fitness >= 0 ? ' ' + result.fitness.toFixed(15) : result.fitness.toFixed(15)} => ${JSON.stringify(result.parameters).substring(0, 150)}`
-                    if (lastFunction !== middleFunction) middleFunction(result)
-                    result.message = `FINISHED in ${result.totalTime.toString().padStart(4, ' ')} ms    Best fitness: ${result.fitness >= 0 ? ' ' + result.fitness.toFixed(12) : result.fitness.toFixed(12)} => ${JSON.stringify(result.parameters)}`
-                    lastFunction(result)
-                }
-            })
-        }
-        iterate()
-    }
+    evolveOneGeneration = () => new Promise((resolve, reject) => {
+        try {
+            const nrOfSurvivors = this.__internal__.survivorPercent ? Math.ceil(this.__internal__.survivors * this.__internal__.max_population) : this.__internal__.survivors
+            const options = {
+                currentGeneration: 0,
+                maxGenerations: 1,
+                totalTime: 0,
+                generations: this.__internal__.generations,
+                parameters: this.__internal__.parameters,
+                initialParams: this.__internal__.initialParams,
+                max_population: this.__internal__.max_population,
+                survivors: this.__internal__.survivors,
+                nrOfSurvivors: nrOfSurvivors,
+                survivorPercent: this.__internal__.survivorPercent,
+                fitnessTargetValue: this.__internal__.fitnessTargetValue,
+                fitnessTargetTolerance: this.__internal__.fitnessTargetTolerance,
+                fitnessTimeout: this.__internal__.fitnessTimeout,
+                stopFitness: this.__internal__.stopFitness,
+                crossoverChance: this.__internal__.crossoverChance,
+                mutation: this.__internal__.mutation || { chance: 0.1, power: 0.1 },
+                proportional_mutation_factor: this.__internal__.proportional_mutation_factor,
+                calculateFitness: this.__internal__.calculateFitness,
+                bestSurvive: this.__internal__.bestSurvive,
+                verbose: this.__internal__.verbose
+            }
+            EVLOLVE(options, progress => {
+                progress.totalTime = progress.time
+                this.__internal__.proportional_mutation_factor = progress.proportional_mutation_factor
+            }).then(resolve).catch(reject)
+        } catch (e) { reject(e) }
+    })
+    /** @param {number} generation_count * @param {(x: any) => void} [progress_callback] */
+    evolve = (generation_count, progress_callback) => new Promise((resolve, reject) => {
+        try {
+            progress_callback = progress_callback || ((x) => { })
+            const nrOfSurvivors = this.__internal__.survivorPercent ? Math.ceil(this.__internal__.survivors * this.__internal__.max_population) : this.__internal__.survivors
+            const options = {
+                currentGeneration: 0,
+                maxGenerations: generation_count,
+                totalTime: 0,
+                generations: this.__internal__.generations,
+                parameters: this.__internal__.parameters,
+                initialParams: this.__internal__.initialParams,
+                max_population: this.__internal__.max_population,
+                survivors: this.__internal__.survivors,
+                nrOfSurvivors: nrOfSurvivors,
+                survivorPercent: this.__internal__.survivorPercent,
+                fitnessTargetValue: this.__internal__.fitnessTargetValue,
+                fitnessTargetTolerance: this.__internal__.fitnessTargetTolerance,
+                fitnessTimeout: this.__internal__.fitnessTimeout,
+                stopFitness: this.__internal__.stopFitness,
+                crossoverChance: this.__internal__.crossoverChance,
+                mutation: this.__internal__.mutation || { chance: 0.1, power: 0.1 },
+                proportional_mutation_factor: this.__internal__.proportional_mutation_factor,
+                calculateFitness: this.__internal__.calculateFitness,
+                bestSurvive: this.__internal__.bestSurvive,
+                verbose: this.__internal__.verbose,
+            }
+            EVLOLVE(options, progress => {
+                progress.message = `Gen: ${progress.generation.toString().padStart(3, ' ')}  Pop: ${progress.population}  PMF: ${progress.proportional_mutation_factor.toFixed(3)} finished in ${progress.time.toString().padStart(4, ' ')} ms    Best fitness: ${progress.fitness >= 0 ? ' ' + progress.fitness.toFixed(15) : progress.fitness.toFixed(15)} => ${JSON.stringify(progress.parameters).substring(0, 150)}`
+                progress_callback(progress)
+            }).then(result => {
+                result.message = `FINISHED in ${result.totalTime.toString().padStart(4, ' ')} ms    Best fitness: ${result.fitness >= 0 ? ' ' + result.fitness.toFixed(15) : result.fitness.toFixed(15)} => ${JSON.stringify(result.parameters)}`
+                resolve(result)
+            }).catch(reject)
+        } catch (e) { reject(e) }
+    })
 }
 
 module.exports = Trainer
