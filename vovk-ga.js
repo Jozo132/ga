@@ -80,6 +80,21 @@ const generateRandomParameter = param => {
     if (type === 'option') {
         const options = param.options || [0, 1]
         return randomArrayItem(options)
+    } else if (type === 'combination') {
+        const options = param.options
+        const repeat = param.repeat
+        let output = []
+        if (repeat) for (let i = 0; i < options.length; i++) output.push(randomArrayItem(options))
+        else output = shuffleArray(options)
+        if (param.start !== undefined && output.includes(param.start))
+            output = rotateArray(output, output.indexOf(param.start))
+        return output
+    } else if (type === 'string') {
+        const options = param.options || 'abcdefghijklmnopqrstuvwxyz'.split('')
+        const size = param.size || 1
+        let output = ''
+        for (let i = 0; i < size; i++) output += randomArrayItem(options)
+        return output
     } else {
         const range = param.range || { min: 0, max: 100 }
         let output = type === 'integer' ? randomOfRangeInt(range.min, range.max) : randomOfRange(range.min, range.max)
@@ -109,6 +124,30 @@ const mutateParameter = (value, param, options, child_proportional_position) => 
         const p_options = param.options || [0, 1]
         if (m_chance()) return randomArrayItem(p_options)
         else return value
+    } else if (type === 'combination') {
+        const options = param.options
+        const repeat = param.repeat
+        let output = value || generateRandomParameter(param)
+        for (let i = 0; i < options.length; i++) {
+            if (m_chance()) {
+                if (repeat) output[i] = randomArrayItem(options)
+                else output = stirArray(output, 1)
+            }
+        }
+        if (param.start !== undefined && output.includes(param.start))
+            output = rotateArray(output, output.indexOf(param.start))
+        return output
+    } else if (type === 'string') {
+        const p_options = param.options || 'abcdefghijklmnopqrstuvwxyz'.split('')
+        const size = param.size || 1
+        let output = value || generateRandomParameter(param)
+        for (let i = 0; i < size; i++)
+            if (m_chance()) {
+                const arr = [...output]
+                arr[i] = randomArrayItem(p_options)
+                output = arr.join('')
+            }
+        return output
     } else {
         if (m_chance()) return mutate_number(value, param, options, child_proportional_position)
         else return value
@@ -377,11 +416,91 @@ class Trainer {
                     const generatedParam = { variable: p, type: param.type }
                     if (param.range) generatedParam.range = param.range
                     if (param.snap) generatedParam.snap = param.snap
-                    if (param.options) generatedParam.options = param.options
                     outputParameters.push(generatedParam)
                 })
             } else {
-                outputParameters.push(param)
+                if (param.size > 1) {
+                    for (let i = 0; i < param.size; i++) {
+                        const generatedParam = { variable: `${param.variable}${i}`, type: param.type }
+                        if (param.range) generatedParam.range = param.range
+                        if (param.snap) generatedParam.snap = param.snap
+                        outputParameters.push(generatedParam)
+                    }
+                } else outputParameters.push(param)
+            }
+        }
+        const addInteger = (param) => {
+            const snap = round(param.snap)
+            if (isArray(param.variable)) {
+                param.variable.forEach(p => {
+                    const generatedParam = { variable: p, type: param.type }
+                    if (param.range) generatedParam.range = param.range
+                    if (snap) generatedParam.snap = snap
+                    outputParameters.push(generatedParam)
+                })
+            } else {
+                if (param.size > 1) {
+                    for (let i = 0; i < param.size; i++) {
+                        const generatedParam = { variable: `${param.variable}${i}`, type: param.type }
+                        if (param.range) generatedParam.range = param.range
+                        if (snap) generatedParam.snap = snap
+                        outputParameters.push(generatedParam)
+                    }
+                } else outputParameters.push(param)
+            }
+        }
+
+        const addOption = (param) => {
+            if (isArray(param.variable)) {
+                param.variable.forEach(p => {
+                    const generatedParam = { variable: p, type: param.type }
+                    generatedParam.options = param.options
+                    outputParameters.push(generatedParam)
+                })
+            } else {
+                if (param.size > 1) {
+                    for (let i = 0; i < param.size; i++) {
+                        const generatedParam = { variable: `${param.variable}${i}`, type: param.type }
+                        generatedParam.options = param.options
+                        outputParameters.push(generatedParam)
+                    }
+                } else outputParameters.push(param)
+            }
+        }
+
+        const addCombination = (param) => {
+            param.options = isString(param.options) ? param.options.split('') : param.options
+            if (isArray(param.variable)) {
+                param.variable.forEach(p => {
+                    const generatedParam = { variable: p, type: param.type }
+                    if (param.options) generatedParam.options = param.options
+                    outputParameters.push(generatedParam)
+                })
+            } else outputParameters.push(param)
+        }
+
+
+        const addString = (param) => {
+            param.size = param.size || 1
+            param.options = isString(param.options) ? param.options.split('') : param.options
+            if (isArray(param.variable)) {
+                param.variable.forEach(p => {
+                    const generatedParam = { variable: p, type: param.type }
+                    generatedParam.size = param.size
+                    if (param.options) generatedParam.options = param.options
+                    outputParameters.push(generatedParam)
+                })
+            } else outputParameters.push(param)
+        }
+
+        inputParameters.forEach(param => {
+            switch (param.type) {
+                case 'number': addNumber(param); break;
+                case 'integer': addInteger(param); break;
+                case 'option': addOption(param); break;
+                case 'combination': addCombination(param); break;
+                case 'string': addString(param); break;
+                default: addNumber(param); break;
             }
         })
         this.__internal__.parameters = outputParameters
