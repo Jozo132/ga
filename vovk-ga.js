@@ -403,9 +403,7 @@ class Trainer {
         if (config.fitnessTargetTolerance !== undefined) this.setFitnessTargetTolerance(config.fitnessTargetTolerance)
         if (config.bestSurvive !== undefined) this.letBestSurvive(config.bestSurvive)
         if (config.fitnessFunction !== undefined) this.setFitnessFunction(config.fitnessFunction)
-
-        if (config.fitnessTimeoutFunction !== undefined) this.setFitnessTimeout(config.fitnessTimeoutFunction, undefined)
-        if (config.fitnessTimeout !== undefined) this.setFitnessTimeout(undefined, config.fitnessTimeout)
+        return this
     }
 
     setParameters = (...params) => {
