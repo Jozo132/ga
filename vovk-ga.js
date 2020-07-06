@@ -507,7 +507,6 @@ class Trainer {
     }
     setFitnessTargetValue = t => this.__internal__.fitnessTargetValue = t || 0
     setFitnessTargetTolerance = t => this.__internal__.fitnessTargetTolerance = t || 0
-    setFitnessTimeout = (callback, to) => { this.__internal__.throwTimeout = callback || this.__internal__.throwTimeout; this.__internal__.fitnessTimeout = to || this.__internal__.fitnessTimeout }
     setMaxPopulation = mp => this.__internal__.max_population = mp || 100
     setSurvivors = s => { this.__internal__.survivors = s || 0; this.__internal__.survivorPercent = false }
     setSurvivorsPERCENT = s => { this.__internal__.survivors = s || 0; this.__internal__.survivorPercent = true }
