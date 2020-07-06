@@ -31,6 +31,7 @@ const PI = Math.PI
 
 class TinyPause { constructor(nr_of_calls) { this.call_index = 0; this.nr_of_calls = +nr_of_calls || 10000; }; execute = f => { this.call_index++; if (this.call_index >= this.nr_of_calls) { this.call_index = 0; setTimeout(f, 0); } else f() } }
 const sanityPause = new TinyPause(10000).execute
+const sanityPauseB = new TinyPause(1000).execute
 const isPromise = o => !!o && (typeof o === 'object' || typeof o === 'function') && typeof o.then === 'function'
 const isValidFitnessResult = x => x >= 0 || x < 0 || isNaN(x)
 
@@ -283,6 +284,7 @@ const fitnessTestPopulationASYNC = (population, options) => new Promise((resolve
     // Filter out identical children and only keep uniques
     try {
         let uniquePopulation = getUniquePopulation(population, options.parameters)
+        const sequence = options.sequence
         let i = 0
         const startTime = +new Date()
         let timeout = false
@@ -302,11 +304,12 @@ const fitnessTestPopulationASYNC = (population, options) => new Promise((resolve
                     if (options.verbose) console.log('Fitness tested population done', uniquePopulation)
                     resolve(uniquePopulation)
                 })
+            } else {
+                if (sequence) sanityPauseB(() => testChild(uniquePopulation[i]))
             }
         }
 
-        if (options.verbose) console.log('Testing a population of', uniquePopulation.length)
-        uniquePopulation.forEach(child => {
+        const testChild = child => {
             let gotResponse = false
             const fitnessCallback = result => {
                 if (!gotResponse) {
@@ -317,7 +320,11 @@ const fitnessTestPopulationASYNC = (population, options) => new Promise((resolve
             const fitnessOutput = options.calculateFitness(child, fitnessCallback) // Handle async callback
             if (isPromise(fitnessOutput)) fitnessOutput.then(fitnessCallback).catch(reject) // Handle async promise
             else if (isValidFitnessResult(fitnessOutput)) fitnessCallback(fitnessOutput) // Handle directly returned output
-        })
+        }
+
+        if (options.verbose) console.log('Testing a population of', uniquePopulation.length)
+        if (sequence) testChild(uniquePopulation[0])
+        else uniquePopulation.forEach(testChild)
     } catch (e) { reject(e) }
 })
 
@@ -341,23 +348,24 @@ const EVLOLVE = (options, progress_callback) => new Promise((resolve, reject) =>
         O.currentGeneration = O.currentGeneration || 0
         O.maxGenerations = O.maxGenerations > 0 ? O.maxGenerations : 1
         O.totalTime = O.totalTime || 0
-        O.generations = O.generations
+        O.generations = O.generations || 1
         O.parameters = O.parameters
         O.initialParams = O.initialParams
-        O.max_population = O.max_population
+        O.max_population = O.max_population || 100
         O.survivors = O.survivors
         O.nrOfSurvivors = O.nrOfSurvivors
         O.survivorPercent = O.survivorPercent
-        O.fitnessTargetValue = O.fitnessTargetValue
-        O.fitnessTargetTolerance = O.fitnessTargetTolerance
+        O.fitnessTargetValue = O.fitnessTargetValue || 0
+        O.fitnessTargetTolerance = O.fitnessTargetTolerance || 0
         O.fitnessTimeout = O.fitnessTimeout
         O.stopFitness = O.stopFitness
         O.crossoverChance = O.crossoverChance
         O.mutation = O.mutation || { chance: 0.1, power: 0.1 }
         O.proportional_mutation_factor = O.proportional_mutation_factor
         O.calculateFitness = O.calculateFitness
-        O.bestSurvive = O.bestSurvive
-        O.verbose = O.verbose
+        O.bestSurvive = O.bestSurvive || true
+        O.sequence = O.sequence || false
+        O.verbose = O.verbose || false
 
         if (options.verbose) console.log(options)
         //throw ''
@@ -439,21 +447,22 @@ class Trainer {
             mutation: { chance: 0.5, power: 0.1 },
             crossoverChance: 0.1,
             proportional_mutation_factor: 1.0,
-            verbose: false,
             parameters: [],
             initialParams: {},
             calculateFitness: () => 0,
             stopFitness: x => false,
+            sequence: false,
+            verbose: false,
             generations: []
-
         }
         this.configure(config)
     };
 
-    /** @param {{ parameters?: object | Array; debug?: boolean; initialValues?: any; maxPopulation?: number; survivors?: number; survivorsPERCENT?: number; crossoverChance?: number; mutationChance?: number; mutationPower?: number; fitnessTargetValue?: number; fitnessTargetTolerance? : number; bestSurvive?: boolean; fitnessFunction?: any; fitnessTimeout?: any; }} config */
+    /** @param {{ parameters?: object | Array; sequence?: boolean; debug?: boolean; initialValues?: any; maxPopulation?: number; survivors?: number; survivorsPERCENT?: number; crossoverChance?: number; mutationChance?: number; mutationPower?: number; fitnessTargetValue?: number; fitnessTargetTolerance? : number; bestSurvive?: boolean; fitnessFunction?: any; fitnessTimeout?: any; }} config */
     configure = (config) => {
         config = config || {}
         if (config.parameters !== undefined) this.setParameters(config.parameters)
+        if (config.sequence !== undefined) this.useSequence(config.sequence)
         if (config.debug !== undefined) this.debug(config.debug)
         if (config.initialValues !== undefined) this.initialize(config.initialValues)
         if (config.maxPopulation !== undefined) this.setMaxPopulation(config.maxPopulation)
@@ -581,6 +590,7 @@ class Trainer {
     setStopFunction = f => this.__internal__.stopFitness = f || (() => false)
     letBestSurvive = s => this.__internal__.bestSurvive = (s || s === undefined ? true : false)
     debug = bool => this.__internal__.verbose = bool ? true : false
+    useSequence = bool => this.__internal__.sequence = bool ? true : false
 
     // 1. Generate population based on parents or initial values or random
     // 2. Do crossover
@@ -643,6 +653,7 @@ class Trainer {
                 proportional_mutation_factor: this.__internal__.proportional_mutation_factor,
                 calculateFitness: this.__internal__.calculateFitness,
                 bestSurvive: this.__internal__.bestSurvive,
+                sequence: this.__internal__.sequence,
                 verbose: this.__internal__.verbose,
             }
             EVLOLVE(options, progress => {
