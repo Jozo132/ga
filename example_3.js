@@ -1,10 +1,12 @@
 // @ts-check
 'use strict'
 
-const GA = require('./ga')
+const GA = require('./vovk-ga')
 const trainer = new GA()
 
-const parameters = { variable: ['x', 'y'], type: 'number', range: { min: -2, max: 2 }, snap: 0.01 }
+console.log(`Example 3: Intermediate function optimization`)
+
+const parameters = { variable: ['x', 'y'], type: 'number', range: { min: -2, max: 2 }, snap: 0.0001 }
 
 const desiredOutput = 3
 
@@ -22,7 +24,7 @@ const fitnessFunction = (sample, /* callback */) => {   // optional async callba
     return output - desiredOutput
 }
 
-trainer.configure({
+const conf = {
     //debug: false,
     maxPopulation: 1000,
     survivorsPERCENT: 0.05,
@@ -35,16 +37,24 @@ trainer.configure({
     fitnessFunction: fitnessFunction,
     fitnessTargetValue: 0,
     fitnessTimeout: 10000,
-    fitnessTimeoutFunction: () => { throw 'Training timeout!' }
-})
+}
 
-trainer.evolve(100,
-    (status) => { // Progress
-        console.log(status.message)
-    },
-    (finalStatus) => { // Final results
-        console.log(finalStatus.message)
-        const { x, y } = finalStatus.parameters
-        console.log(`Test ${test.toString()}    --->    ${test(x, y)}`)
-    }
-)
+const logProgress = progress => {
+    console.log(progress.message)
+}
+
+const logResult = result => { // Final results
+    console.log(result.message)
+    const { x, y } = result.parameters
+    console.log(`Test ${test.toString()}    --->    ${test(x, y)}`)
+}
+
+const catchError = e => {
+    if (e === 'timeout') console.log('Training timeout!')
+    else throw e
+}
+
+console.log(`Starting training...`)
+trainer.configure(conf).evolve(100, logProgress)
+    .then(logResult)
+    .catch(catchError)
