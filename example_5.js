@@ -93,8 +93,8 @@ const fitnessFunction = (sample, /* callback */) => {   // optional async callba
 const conf = {
     //debug: true,
     maxPopulation: 10000,
-    survivorsPERCENT: 0.10,
-    crossoverChance: 0.05,
+    survivorsPERCENT: 0.005,
+    crossoverChance: 0.15,
     mutationChance: 0.05,
     mutationPower: 1,
     bestSurvive: true,
@@ -135,6 +135,25 @@ const catchError = e => {
 setTimeout(() => {
     console.log(`Starting training...`)
     trainer.configure(conf).evolve(100, logProgress)
-        .then(logResult)
+        .then(result => {
+            logResult(result)
+            /*
+                Plot data:
+                1. Points:
+                    0,0
+                    10,10
+                    5,5
+                2. Path:
+                    1 2 3
+            */
+            console.log(`Plot data:`)
+            console.log(`1. Points:`)
+            dataSet.cities.forEach(city => {
+                console.log(`\t${city.x},${city.y}`)
+            })
+            console.log(`2. Path:`)
+            const { path } = result.parameters
+            console.log(`\t${path.map(x => x + 1).join(' ')}`)
+        })
         .catch(catchError)
 }, 1000)

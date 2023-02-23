@@ -17,10 +17,9 @@ const test = (x, y) => {
     return output
 }
 
-const fitnessFunction = (sample, /* callback */) => {   // optional async callback
+const fitnessFunction = (sample) => {
     const { x, y } = sample
     const output = test(x, y)
-    //callback(output) 
     return output - desiredOutput
 }
 

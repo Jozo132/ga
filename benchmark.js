@@ -14,6 +14,7 @@
 // @ts-ignore
 const cli_input = require('minimist')(process.argv.slice(2));
 
+const delay = ms => new Promise(r => setTimeout(r, ms))
 const padStart = (str, len, def) => { str = str.toString(); while (str.length < len) str = (def || ' ') + str; return str }
 const random = Math.random
 const gaussianRand = v => new Array(v > 0 && v < Infinity ? v : 5).fill(0).map(random).reduce((sum, x) => sum += x, 0) / (v > 0 && v < Infinity ? v : 5)
@@ -21,7 +22,10 @@ const noise = (mean, stdev) => mean + (2 * gaussianRand() * stdev) - stdev
 const round = Math.round
 const floor = Math.floor
 const ceil = Math.ceil
-const sgn = x => x >= 0 ? 1 : -1
+const sgn = x => {
+    console.log("sgn(", x, ")");
+    return x === 0 ? 0 : x > 0 ? 1 : -1;
+};
 const pi = Math.PI
 const e = Math.E
 const abs = Math.abs
@@ -41,7 +45,7 @@ const benchmarks = {
             `\tMultivariate test: Ackley function\n\n` +
             `\t2-dimensional input with domain: |xi| ≤ 30\n` +
             `\tThe global minimum is 0 at point: ( 0, 0 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfAckley`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfAckley`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -30, max: 30 } },
         default: {},
         targetFitness: 0,
@@ -62,7 +66,7 @@ const benchmarks = {
             `\tMultivariate test: Beale function\n\n` +
             `\t2-dimensional input with domain: |xi| ≤ 4.5\n` +
             `\tThe global minimum is 0 at point: ( 3, 0.5 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfBeale`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfBeale`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -4.5, max: 4.5 } },
         default: {},
         targetFitness: 0,
@@ -80,7 +84,7 @@ const benchmarks = {
             `\tMultivariate test: Bohachevsky (1) function\n\n` +
             `\t2-dimensional input with domain: |xi| ≤ 50\n` +
             `\tThe global minimum is 0 at the zeroth vector: ( 0, 0 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfBohachevsky1`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfBohachevsky1`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -50, max: 50 } },
         default: {},
         targetFitness: 0,
@@ -97,7 +101,7 @@ const benchmarks = {
             `\tMultivariate test: Bohachevsky (2) function\n\n` +
             `\t2-dimensional input with domain: |xi| ≤ 50\n` +
             `\tThe global minimum is 0 at the zeroth vector: ( 0, 0 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfBohachevsky2`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfBohachevsky2`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -50, max: 50 } },
         default: {},
         targetFitness: 0,
@@ -115,7 +119,7 @@ const benchmarks = {
             `\tMultivariate test: Booth function\n\n` +
             `\t2-dimensional input with domain: |xi| ≤ 10\n` +
             `\tThe global minimum is 0 at point: ( 1, 3 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfBooth`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfBooth`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -10, max: 10 } },
         default: {},
         targetFitness: 0,
@@ -133,7 +137,7 @@ const benchmarks = {
             `\tMultivariate test: Box-Betts exponential quadratic sum\n\n` +
             `\t3-dimensional input with domain:   0.9 ≤ {x1,x3} ≤ 1.2,  9 ≤ x2 ≤ 11.2\n` +
             `\tThe global minimum is 0 at point: ( 1, 10, 1 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=200 --mutChance=0.3 --mutPower=100 --crossover=0.15 --function=mvfBoxBetts`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=200 --mutChance=0.3 --mutPower=100 --crossover=0.15 --function=mvfBoxBetts`,
         params: [
             { variable: ['x1', 'x3'], type: 'number', range: { min: 0.9, max: 1.2 } },
             { variable: 'x2', type: 'number', range: { min: 9, max: 11.2 } }
@@ -157,7 +161,7 @@ const benchmarks = {
             `\tMultivariate test: Branin (1) function\n\n` +
             `\t2-dimensional input with domain:   -5 < x0 ≤ 10,  0 ≤ x1 ≤ 15\n` +
             `\tThe global minimum is 0.398 at points: ( -3.142, 12.275 ), ( 3.142, 2.275 ), ( 9.425, 2.425 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfBranin1`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=200 --mutChance=0.25 --mutPower=0.1 --crossover=0.15 --function=mvfBranin1`,
         params: [
             { variable: 'x0', type: 'number', range: { min: -4.9, max: 10 } },
             { variable: 'x1', type: 'number', range: { min: 0, max: 15 } },
@@ -177,7 +181,7 @@ const benchmarks = {
             `\tMultivariate test: Branin (2) function\n\n` +
             `\t2-dimensional input with domain: |xi| ≤ 10\n` +
             `\tThe global minimum is 0 at point: ( 0.402369, 0.287406 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=2000 --mutChance=0.25 --mutPower=1000 --crossover=0.15 --function=mvfBranin2`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=2000 --mutChance=0.25 --mutPower=1000 --crossover=0.15 --function=mvfBranin2`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -10, max: 10 } },
         //default: { x0: 0.402369, x1: 0.287406 },
         //default: { x0: 1.597461, x1: -0.287405 },
@@ -197,7 +201,7 @@ const benchmarks = {
             `\tMultivariate test: three-hump camel back function\n\n` +
             `\t2-dimensional input with domain: |xi| ≤ 5\n` +
             `\tThe global minimum is 0 at point: ( 0, 0 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=2000 --mutChance=0.15 --mutPower=100 --crossover=0.15 --function=mvfCamel3`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=2000 --mutChance=0.15 --mutPower=100 --crossover=0.15 --function=mvfCamel3`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -5, max: 5 } },
         default: {},
         targetFitness: 0,
@@ -214,7 +218,7 @@ const benchmarks = {
             `\tMultivariate test: six-hump camel back function\n\n` +
             `\t2-dimensional input with domain: |xi| ≤ 5\n` +
             `\tThe global minimum is -1.0316 at point: ( -0.08983, 0.7126 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=2000 --mutChance=0.15 --mutPower=100 --crossover=0.15 --function=mvfCamel6`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=2000 --mutChance=0.15 --mutPower=100 --crossover=0.15 --function=mvfCamel6`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -5, max: 5 } },
         default: {},
         targetFitness: -1.0316,
@@ -233,7 +237,7 @@ const benchmarks = {
             `\tMultivariate test: Chichinadze function\n\n` +
             `\t2-dimensional input with domain:   -30 < x0 ≤ 30,  -10 ≤ x1 ≤ 10\n` +
             `\tThe global minimum is -42.944387 at point: ( 6.189866, 0.5 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=2000 --mutChance=0.25 --mutPower=10 --crossover=0.15 --function=mvfChichinadze`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=2000 --mutChance=0.25 --mutPower=10 --crossover=0.15 --function=mvfChichinadze`,
         params: [
             { variable: 'x0', type: 'number', range: { min: -30, max: 30 } },
             { variable: 'x1', type: 'number', range: { min: -10, max: 10 } },
@@ -255,7 +259,7 @@ const benchmarks = {
             `\tMultivariate test: Colville function\n\n` +
             `\t4-dimensional input with domain: |xi| ≤ 10\n` +
             `\tThe global minimum is 0 at point: ( 1, 1, 1, 1 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=2000 --mutChance=0.15 --mutPower=100 --crossover=0.15 --function=mvfColville`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=2000 --mutChance=0.15 --mutPower=100 --crossover=0.15 --function=mvfColville`,
         params: { variable: ['x0', 'x1', 'x2', 'x3'], type: 'number', range: { min: -10, max: 10 } },
         default: {},
         targetFitness: 0,
@@ -274,7 +278,7 @@ const benchmarks = {
             `\tMultivariate test: Corana function\n\n` +
             `\t4-dimensional input with domain: |xi| ≤ 100\n` +
             `\tThe global minimum is 0 at point: ( 1, 1, 1, 1 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=5000 --mutChance=0.15 --mutPower=10 --crossover=0.15 --function=mvfCorana`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=5000 --mutChance=0.15 --mutPower=10 --crossover=0.15 --function=mvfCorana`,
         params: { variable: ['x0', 'x1', 'x2', 'x3'], type: 'number', range: { min: -100, max: 100 } },
         default: {},
         targetFitness: 0,
@@ -296,7 +300,7 @@ const benchmarks = {
             `\tMultivariate test: Easom [Eas90] function\n\n` +
             `\t2-dimensional input with domain: |xi| ≤ 100\n` +
             `\tThe global minimum is -1 at point: ( π, π )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=2500 --mutChance=0.25 --mutPower=10 --crossover=0.15 --function=mvfEas90`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=2500 --mutChance=0.25 --mutPower=10 --crossover=0.15 --function=mvfEas90`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -100, max: 100 } },
         default: {},
         targetFitness: -1,
@@ -315,7 +319,7 @@ const benchmarks = {
             `\tMultivariate test: Egg holder function\n\n` +
             `\t2(or n)-dimensional input with domain: |xi| ≤ 512\n` +
             `\tThe global minimum is -959.6407 at point: ( 512, 404.2319 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=500 --mutChance=0.35 --mutPower=1 --crossover=0.15 --function=mvfEggholder`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=500 --mutChance=0.35 --mutPower=1 --crossover=0.15 --function=mvfEggholder`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -512, max: 512 } },
         default: {},
         targetFitness: -959.6407,
@@ -341,7 +345,7 @@ const benchmarks = {
             `\tMultivariate test: Exp2 function\n\n` +
             `\t2-dimensional input with domain:  0 ≤ xi ≤ 20\n` +
             `\tThe global minimum is 0 at point: ( 1, 10 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=500 --mutChance=0.35 --mutPower=100 --crossover=0.15 --function=mvfExp2`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=500 --mutChance=0.35 --mutPower=100 --crossover=0.15 --function=mvfExp2`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -0, max: 20 } },
         default: {},
         targetFitness: 0,
@@ -361,7 +365,7 @@ const benchmarks = {
             `\tMultivariate test: Gear function\n\n` +
             `\t2-dimensional input with domain:  12 ≤ xi ≤ 60\n` +
             `\tThe global minimum is 2.7e-12 at point: ( 16, 19, 49, 43 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=25000 --mutChance=0.05 --mutPower=100000000 --crossover=0.15 --function=mvfGear`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=25000 --mutChance=0.05 --mutPower=100000000 --crossover=0.15 --function=mvfGear`,
         params: { variable: ['x0', 'x1', 'x2', 'x3'], type: 'number', range: { min: 12, max: 60 } },
         default: {},
         targetFitness: 2.7e-12,
@@ -380,7 +384,7 @@ const benchmarks = {
             `\tMultivariate test: Goldstein-Price function\n\n` +
             `\t2-dimensional input with domain:  |xi| ≤ 2\n` +
             `\tThe global minimum is 3 at point: ( 0, -1 )\n\n` +
-            `\tExample command:  node benchmark --gen=20 --pop=2500 --mutChance=0.35 --mutPower=10 --crossover=0.15 --function=mvfGoldsteinPrice`,
+            `\tExample command:  node benchmark --gen=20 --n=10 --pop=2500 --mutChance=0.35 --mutPower=10 --crossover=0.15 --function=mvfGoldsteinPrice`,
         params: { variable: ['x0', 'x1'], type: 'number', range: { min: -2, max: 2 } },
         default: {},
         targetFitness: 3,
@@ -400,12 +404,11 @@ const benchmarks = {
 
 
 
-const trainBenchmarFunction = (BM, options, callback) => {
-    callback = callback || (() => { })
+const trainBenchmarkFunction = async (BM, options) => {
     const name = Number.isInteger(BM) ? 'F' + BM : BM
     const bench = typeof name === 'string' ? benchmarks[name] : BM
     options = options || {}
-    const { population, crossover, mutationChance, mutationPower, generations: gens } = options
+    const { population, crossover, mutationChance, mutationPower, numSurvivors, generations: gens } = options
     const GA = require('./vovk-ga')
     const trainer = new GA()
     if (bench.info) console.log(`Benchmark info:\n` + bench.info);
@@ -413,7 +416,7 @@ const trainBenchmarFunction = (BM, options, callback) => {
     trainer.initialize(bench.default)
     trainer.setParameters(bench.params)
     trainer.setMaxPopulation(population || 50)
-    //trainer.setSurvivors(3)
+    trainer.setSurvivors(numSurvivors || 3)
     trainer.letBestSurvive(true)
     trainer.setSurvivorsPERCENT(0.05)
     trainer.setCrossoverChance(crossover || 0.25)
@@ -424,20 +427,17 @@ const trainBenchmarFunction = (BM, options, callback) => {
     trainer.setStopFunction(bench.stopFunction)
     const generations = gens || 10
     //trainer.letBestSurvive(true)
-    setTimeout(() => {
-        console.log(`Starting benchmark for ${name}`)
-        trainer.evolve(generations, status => {
-            const fitness = +status.fitness
-            console.log(`Gen: ${padStart(status.generation, 3, ' ')} Pop: ${status.population} finished in ${padStart(status.time, 4, ' ')} ms    Best fitness: ${fitness >= 0 ? ' ' + fitness.toFixed(9) : fitness.toFixed(9)} ${Object.keys(status.parameters).length < 6 ? `    =>  Best sample: ${JSON.stringify(status.parameters)}` : ''}`)
-        }).then(results => {
-            const fitness = +results.fitness
-            console.log(`${results.failed ? 'FAILED' : `FINISHED`} in ${padStart(results.totalTime, 4, ' ')} ms    Best fitness: ${fitness >= 0 ? ' ' + fitness.toFixed(9) : fitness.toFixed(9)}     =>  Best sample: ${JSON.stringify(results.parameters)}`)
-            console.log(`Test ${bench.fn.toString()} \nFinal fitness:  ${bench.fn(results.parameters)} `);
-            callback(results)
-        }).catch(e => {
-            throw e
-        })
-    }, 1000)
+    await delay(1000)
+    console.log(`Starting benchmark for ${name}`)
+    const updateProgress = status => {
+        const fitness = +status.fitness
+        console.log(`Gen: ${padStart(status.generation, 3, ' ')} Pop: ${status.population} finished in ${padStart(status.time, 4, ' ')} ms    Best fitness: ${fitness >= 0 ? ' ' + fitness.toFixed(9) : fitness.toFixed(9)} ${Object.keys(status.parameters).length < 6 ? `    =>  Best sample: ${JSON.stringify(status.parameters)}` : ''}`)
+    }
+    const results = await trainer.evolve(generations, updateProgress)
+    const fitness = +results.fitness
+    console.log(`${results.failed ? 'FAILED' : `FINISHED`} in ${padStart(results.totalTime, 4, ' ')} ms    Best fitness: ${fitness >= 0 ? ' ' + fitness.toFixed(9) : fitness.toFixed(9)}     =>  Best sample: ${JSON.stringify(results.parameters)}`)
+    console.log(`Test ${bench.fn.toString()} \nFinal fitness:  ${bench.fn(results.parameters)} `);
+    return results
 }
 
 // @ts-ignore
@@ -445,16 +445,7 @@ const info = process.argv.reduce((hasInfo, arg) => hasInfo = hasInfo || (arg ===
 let function_input = cli_input['f'] || cli_input['function']
 const functionName = isNaN(+function_input) ? function_input : 'F' + function_input
 const temp_f = benchmarks[functionName]
-if (temp_f) {
-    const name = functionName
-    const gens = cli_input['g'] || cli_input['gen'] || cli_input['generations'] || 10
-    const pop = cli_input['p'] || cli_input['pop'] || cli_input['population'] || 50
-    const crossover = cli_input['c'] || cli_input['cross'] || cli_input['crossover'] || 0.25
-    const mutChance = cli_input['mc'] || cli_input['mutChance'] || 0.2
-    const mutPower = cli_input['mp'] || cli_input['mutPower'] || 100
-    if (name) trainBenchmarFunction(name, { generations: gens, population: pop, mutationChance: mutChance, mutationPower: mutPower, crossover: crossover })
-    else throw `Benchmark function name '${cli_input[0]}' doesn't exist, plase use this command '--function=mvfBeale'`
-} else {
+if (!temp_f) {
     Object.keys(benchmarks).forEach((name, index) => {
         let message = ''
         if (index > 0) message += `-------------------------------------\n`
@@ -462,4 +453,14 @@ if (temp_f) {
         message += `Benchmark ${index + 1}` + bench.info
         console.log(message)
     })
+    process.exit(0)
 }
+const name = functionName
+if (!name) throw `Benchmark function name '${cli_input[0]}' doesn't exist, plase use this command '--function=mvfBeale'`
+const gens = cli_input['g'] || cli_input['gen'] || cli_input['generations'] || 10
+const pop = cli_input['p'] || cli_input['pop'] || cli_input['population'] || 50
+const numSurvivors = cli_input['n'] || cli_input['numSurvivors'] || 1
+const crossover = cli_input['c'] || cli_input['cross'] || cli_input['crossover'] || 0.25
+const mutChance = cli_input['mc'] || cli_input['mutChance'] || 0.2
+const mutPower = cli_input['mp'] || cli_input['mutPower'] || 100
+trainBenchmarkFunction(name, { generations: gens, population: pop, numSurvivors, mutationChance: mutChance, mutationPower: mutPower, crossover: crossover })

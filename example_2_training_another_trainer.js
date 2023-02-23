@@ -20,11 +20,9 @@ const mvfBohachevsky2 = {
     params: { variable: ['x0', 'x1'], type: 'number', range: { min: -50, max: 50 } },
     default: {},
     targetFitness: 0,
-    fn: (sample, callback) => {
-        callback = callback || (() => { })
+    fn: (sample) => {
         const { x0, x1 } = sample
         const output = sq(x0) + 2 * sq(x1) - 0.3 * cos(3 * pi * x0) * cos(4 * pi * x1) + 0.3
-        callback(output)
         return output
     }
 }

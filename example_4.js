@@ -11,7 +11,7 @@ const desiredOutput = 'To be or not to be, that is the question.'
 const parameters = { variable: 'myMessage', size: desiredOutput.length, type: 'string', options: 'abcdefghijklmonpqrstuvxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ,.!?-_' }
 
 
-const fitnessFunction = (sample, /* callback */) => {   // optional async callback
+const fitnessFunction = (sample) => {
     const { myMessage } = sample
     let correctCharacters = 0
     desiredOutput.split('').forEach((c, i) => {
@@ -19,7 +19,6 @@ const fitnessFunction = (sample, /* callback */) => {   // optional async callba
             correctCharacters++;
     })
     const score = correctCharacters / desiredOutput.length
-    //callback(score) 
     return score
 }
 
